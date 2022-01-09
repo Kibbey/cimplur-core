@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31205.134
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Memento", "Memento\Memento.csproj", "{6E92CDB6-16FA-479E-9C74-119B0EF65552}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Memento", "Memento\Memento.csproj", "{6E92CDB6-16FA-479E-9C74-119B0EF65552}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "Domain\Domain.csproj", "{CA21D8DA-A671-4457-B95B-F1CE9A5452D3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "Domain\Domain.csproj", "{CA21D8DA-A671-4457-B95B-F1CE9A5452D3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomainTest", "DomainTest\DomainTest.csproj", "{D8F68D9B-0709-48B2-8FD8-9608E9250A59}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{CA21D8DA-A671-4457-B95B-F1CE9A5452D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CA21D8DA-A671-4457-B95B-F1CE9A5452D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CA21D8DA-A671-4457-B95B-F1CE9A5452D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8F68D9B-0709-48B2-8FD8-9608E9250A59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8F68D9B-0709-48B2-8FD8-9608E9250A59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8F68D9B-0709-48B2-8FD8-9608E9250A59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8F68D9B-0709-48B2-8FD8-9608E9250A59}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

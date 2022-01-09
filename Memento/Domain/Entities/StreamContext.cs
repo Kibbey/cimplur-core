@@ -24,7 +24,6 @@ namespace Domain.Entities
     {
         public StreamContext(DbContextOptions<StreamContext> options) : base(options) { }
 
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.BuildIndexesFromAnnotations();

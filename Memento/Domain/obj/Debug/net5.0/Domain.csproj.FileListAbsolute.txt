@@ -12,3 +12,6 @@ C:\Users\kibbe\repo\cimplur-core\Memento\Domain\obj\Debug\net5.0\Domain.pdb
 C:\Users\kibbe\repo\cimplur-core\Memento\Domain\bin\Debug\net5.0\Domain.runtimeconfig.json
 C:\Users\kibbe\repo\cimplur-core\Memento\Domain\bin\Debug\net5.0\Domain.runtimeconfig.dev.json
 C:\Users\kibbe\repo\cimplur-core\Memento\Domain\obj\Debug\net5.0\Domain.genruntimeconfig.cache
+C:\Users\kibbe\repo\cimplur-core\Memento\Domain\bin\Debug\net5.0\appsettings.Development.json
+C:\Users\kibbe\repo\cimplur-core\Memento\Domain\bin\Debug\net5.0\appsettings.json
+C:\Users\kibbe\repo\cimplur-core\Memento\Domain\obj\Debug\net5.0\Domain.csproj.AssemblyReference.cache
