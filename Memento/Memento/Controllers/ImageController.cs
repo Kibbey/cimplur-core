@@ -1,9 +1,5 @@
-﻿using Memento.Web.Models;
-using System;
+﻿using System;
 using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Memento.Libs;
@@ -18,7 +14,7 @@ namespace Memento.Web.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<HttpResponseMessage> Get(int id)
+        public async Task<IActionResult> Get(int id)
         {
             Stream image = null;
             try
@@ -31,15 +27,12 @@ namespace Memento.Web.Controllers
             }
             if (image != null)
             {
-                HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
-                result.Content = new StreamContent(image);
-                result.Content.Headers.ContentType = new MediaTypeHeaderValue("image/jpg");
-
-                return result;
+                var file = File(image, "image / jpg");
+                return Ok(file);
             }
             else
             {
-                return new HttpResponseMessage(HttpStatusCode.NotFound);
+                return NotFound();
             }
         }
 

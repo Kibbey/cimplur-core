@@ -11,7 +11,7 @@ namespace Memento.Libs
     {
         public void OnAuthorization(AuthorizationFilterContext context)
         {
-            var userId = (String)context.HttpContext.Items["UserId"];
+            var userId = context.HttpContext.Items["UserId"];
             if (userId == null)
             {
                 // not logged in

@@ -8,10 +8,7 @@ namespace Memento.Web.Controllers
     public class BaseApiController : ControllerBase, IDisposable
     {
         public BaseApiController() {
-            var userIdString = (String)HttpContext.Items["UserId"];
-            if (userIdString != null) {
-                userId = int.Parse(userIdString);
-            }
+
         }
 
         private int? userId;
@@ -20,8 +17,21 @@ namespace Memento.Web.Controllers
         {
             get
             {
+                if (!userId.HasValue) {
+                    userId = getUserId();
+                }
                 return userId.Value;
             }
+        }
+
+        private int getUserId() {
+            var userIdString = (int?)HttpContext.Items["UserId"];
+            int userId = 0;
+            if (userIdString.HasValue)
+            {
+                userId = userIdString.Value;
+            }
+            return userId;
         }
 
         private DropsService dropsService;

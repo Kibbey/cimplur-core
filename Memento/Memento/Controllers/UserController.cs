@@ -172,14 +172,6 @@ namespace Memento.Web.Controllers
         [Route("register")]
         public async Task<IActionResult> Register(RegisterModel model)
         {
-            /*
-            model.UserName = model.UserName.ToLower().Trim();
-
-            if (model.UserName.Contains("@"))
-            {
-                return BadRequest("User name can not be an email or contain an @ symbol.");
-            }
-            */
 
             if (!IsValidEmail(model.Email))
             {
@@ -195,14 +187,6 @@ namespace Memento.Web.Controllers
             {
                 return BadRequest("Name is required. It is how others on Fyli see who made a comments and find you to share memories.");
             }
-            
-            /*
-            Regex regexPassword = new Regex("(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\\W)");
-            if (!regexPassword.IsMatch(model.Password))
-            {
-                return BadRequest("Your password must be at least 6 characters long, contain a number, an upper and lower case letter, and a special character.");
-            }
-            */
 
             if (!model.AcceptTerms)
             {
@@ -213,7 +197,8 @@ namespace Memento.Web.Controllers
             var userName = model.Email;
             var reasons = Libs.CookieHelper.GetCookie<ReasonsModel>(reasonsCookie, HttpContext);
             int userId = await UserService.AddUser(model.Email, userName, model.Token, model.AcceptTerms, model.Name, reasons?.Reasons);
-            // ADD COOKIE / TOKEN
+            var token = _userWebToken.generateJwtToken(userId);
+            CookieHelper.SetAuthToken(token, HttpContext);
             GroupsService.AddHelloWorldNetworks(userId);
             await DropsService.AddHelloWorldDrop(userId);
             if (string.IsNullOrWhiteSpace(model.ReturnUrl))

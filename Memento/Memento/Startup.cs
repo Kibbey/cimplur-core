@@ -1,4 +1,5 @@
 using Domain.Models;
+using Memento.Libs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -25,6 +26,7 @@ namespace Memento
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
+            services.AddScoped<UserWebToken, UserWebToken>();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
@@ -44,7 +46,7 @@ namespace Memento
             }
 
             app.UseHttpsRedirection();
-
+            app.UseMiddleware<AuthMiddleWare>();
             app.UseRouting();
 
             app.UseAuthorization();

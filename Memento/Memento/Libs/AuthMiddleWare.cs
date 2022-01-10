@@ -12,14 +12,15 @@ using Domain.Models;
 namespace Memento.Libs
 {
     public class AuthMiddleWare { 
-        private readonly RequestDelegate _next;
-        private readonly AppSettings _appSettings;
-        private readonly UserWebToken _userWebToken;
+        private readonly RequestDelegate next;
+        private readonly AppSettings appSettings;
+        private readonly IOptions<AppSettings> configAppSettings;
 
-        public AuthMiddleWare(RequestDelegate next, IOptions<AppSettings> appSettings, UserWebToken userWebToken)
+        public AuthMiddleWare(RequestDelegate next, IOptions<AppSettings> appSettings)
         {
-            _next = next;
-            _appSettings = appSettings.Value;
+            this.next = next;
+            this.appSettings = appSettings.Value;
+            configAppSettings = appSettings;
         }
 
         public async Task Invoke(HttpContext context)
@@ -32,7 +33,7 @@ namespace Memento.Libs
                 attachUserToContext(context, token);
             }
 
-            await _next(context);
+            await next(context);
         }
 
         private void attachUserToContext(HttpContext context, string token)
@@ -40,7 +41,7 @@ namespace Memento.Libs
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+                var key = Encoding.ASCII.GetBytes(appSettings.Secret);
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
@@ -53,7 +54,8 @@ namespace Memento.Libs
 
                 var jwtToken = (JwtSecurityToken)validatedToken;
                 var userId = int.Parse(jwtToken.Claims.First(x => x.Type == "id").Value);
-                var newToken = _userWebToken.generateJwtToken(userId);
+                var userWebToken = new UserWebToken(configAppSettings);
+                var newToken = userWebToken.generateJwtToken(userId);
                 CookieHelper.SetAuthToken(newToken, context);
                 // attach user to context on successful jwt validation
                 context.Items["UserId"] = userId;

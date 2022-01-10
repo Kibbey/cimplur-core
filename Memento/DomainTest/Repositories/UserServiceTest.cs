@@ -3,6 +3,7 @@ using Domain.Repository;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DomainTest
 {
@@ -10,16 +11,18 @@ namespace DomainTest
     public class UserServiceTest
     {
         [TestMethod]
-        public void AddUser()
+        public async Task AddUser()
         {
             var uuid = Guid.NewGuid().ToString();
             using (var userService = new UserService()) {
-                var user = userService.AddUser(
-                    $"{uuid}@fyli.com", 
+                var name = "John Smith";
+                var email = $"{uuid}@fyli.com";
+                var userId = await userService.AddUser(
+                    email, 
                     uuid, 
                     null, 
                     true, 
-                    "", 
+                    name, 
                     new List<ReasonModel> { 
                         new ReasonModel{ 
                             Key = 1,
@@ -27,10 +30,11 @@ namespace DomainTest
                             Value = "Something"
                         }
                     });
-                Assert.IsNotNull(user);
+                Assert.IsNotNull(userId);
+                var user = await userService.GetProfile(userId);
+                Assert.AreEqual(user.Email, email);
+                Assert.AreEqual(user.Name, name);
             }
-
-            Assert.IsTrue(true);
         }
     }
 }
