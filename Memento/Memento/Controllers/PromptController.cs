@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Memento.Libs;
+using Domain.Repository;
 
 namespace Memento.Web.Controllers
 {
@@ -11,18 +12,29 @@ namespace Memento.Web.Controllers
     [Route("api/prompts")]
     public class PromptController : BaseApiController
     {
+        private PromptService promptService;
+        private SharingService sharingService;
+        private NotificationService notificationService;
+        public PromptController(PromptService promptService,
+            SharingService sharingService,
+            NotificationService notificationService) {
+            this.sharingService = sharingService;
+            this.promptService = promptService;
+            this.notificationService = notificationService;
+        }
+
         [HttpGet]
         [Route("")]
         public async Task<IActionResult> Get()
         {
-            return Ok(await PromptService.GetActivePrompts(CurrentUserId));
+            return Ok(await promptService.GetActivePrompts(CurrentUserId));
         }
 
         [HttpGet]
         [Route("all")]
         public async Task<IActionResult> GetAll(bool? take)
         {
-            var prompts = await PromptService.GetAllPrompts(CurrentUserId);
+            var prompts = await promptService.GetAllPrompts(CurrentUserId);
             return Ok(prompts);
         }
 
@@ -30,7 +42,7 @@ namespace Memento.Web.Controllers
         [Route("asked")]
         public async Task<IActionResult> GetAllAsked()
         {
-            var prompts = await PromptService.GetPromptsAskedByMe(CurrentUserId);
+            var prompts = await promptService.GetPromptsAskedByMe(CurrentUserId);
             return Ok(prompts);
         }
 
@@ -38,7 +50,7 @@ namespace Memento.Web.Controllers
         [Route("toAnswer")]
         public async Task<IActionResult> GetAllToAnswer()
         {
-            var prompts = await PromptService.GetPromptsAskedToMe(CurrentUserId);
+            var prompts = await promptService.GetPromptsAskedToMe(CurrentUserId);
             return Ok(prompts);
         }
 
@@ -46,15 +58,15 @@ namespace Memento.Web.Controllers
         [Route("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            return Ok(await PromptService.GetPrompt(CurrentUserId, id));
+            return Ok(await promptService.GetPrompt(CurrentUserId, id));
         }
 
         [HttpGet]
         [Route("{id}/asked")]
         public async Task<IActionResult> GetByIdAsked(int id)
         {
-            var asked = await PromptService.GetAskedPrompt(CurrentUserId, id);
-            var invitations = await SharingService.GetExistingRequests(CurrentUserId, id, 0);
+            var asked = await promptService.GetAskedPrompt(CurrentUserId, id);
+            var invitations = await sharingService.GetExistingRequests(CurrentUserId, id, 0);
             if (invitations.Any()) {
                 var inviteAsks = invitations.Select(s => new Asked
                 {
@@ -73,7 +85,7 @@ namespace Memento.Web.Controllers
         [Route("")]
         public async Task<IActionResult> Add(QuestionModel questionModel)
         {
-            var prompt = await PromptService.CreatePrompt(CurrentUserId, questionModel.Question);
+            var prompt = await promptService.CreatePrompt(CurrentUserId, questionModel.Question);
             return Ok(prompt);
         }
 
@@ -81,9 +93,9 @@ namespace Memento.Web.Controllers
         [Route("{id}/ask")]
         public async Task<IActionResult> Ask(int id, SelectedUserModel questionModel)
         {
-            await PromptService.AskQuestion(CurrentUserId, questionModel.UserIds, id);
+            await promptService.AskQuestion(CurrentUserId, questionModel.UserIds, id);
             foreach(var targetId in questionModel.UserIds) {
-                await NotificationService.AddNotificationGeneric(CurrentUserId, targetId, id, NotificationType.Question);
+                await notificationService.AddNotificationGeneric(CurrentUserId, targetId, id, NotificationType.Question);
             }
 
             return Ok();
@@ -93,7 +105,7 @@ namespace Memento.Web.Controllers
         [Route("{id}")]
         public async Task<IActionResult> Update(int id, QuestionModel questionModel)
         {
-            await PromptService.UpdatePrompt(CurrentUserId, questionModel.Question, id);
+            await promptService.UpdatePrompt(CurrentUserId, questionModel.Question, id);
             return Ok();
         }
 
@@ -101,7 +113,7 @@ namespace Memento.Web.Controllers
         [Route("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            await PromptService.DismissPrompt(CurrentUserId, id);
+            await promptService.DismissPrompt(CurrentUserId, id);
             return Ok();
         }
     }

@@ -10,12 +10,18 @@ namespace Memento.Web.Controllers
     [Route("api/groups")]
     public class GroupController : BaseApiController
     {
+        private GroupService groupService;
+        private UserService userService;
+        public GroupController(GroupService groupService, UserService userService) {
+            this.groupService = groupService;
+            this.userService = userService;
+        }
 
         [HttpPut]
         [Route("{id}")]
         public async Task<IActionResult> Rename(int id, NameRequest name)
         {
-            string newName = await GroupsService.Rename(CurrentUserId, id, name.Name);
+            string newName = await groupService.Rename(CurrentUserId, id, name.Name);
             return Ok(new { Name = newName });
         }
 
@@ -25,22 +31,22 @@ namespace Memento.Web.Controllers
         public async Task<IActionResult> Groups()
         {
             return Ok(new TagsViewModel(
-                 await GroupsService.AllGroups(CurrentUserId)));
+                 await groupService.AllGroups(CurrentUserId)));
         }
 
         [HttpGet]
         [Route("editable")]
         public async Task<IActionResult> EditableGroups()
         {
-            return Ok(new TagsViewModel(await GroupsService.EditableGroups(CurrentUserId)));
+            return Ok(new TagsViewModel(await groupService.EditableGroups(CurrentUserId)));
         }
 
         [HttpGet]
         [Route("allSelected")]
         public async Task<IActionResult> GroupsAllSelected()
         {
-            var tagViewer = new TagsViewModel(await GroupsService.AllGroups(CurrentUserId));
-            var user = await UserService.GetUser(CurrentUserId);
+            var tagViewer = new TagsViewModel(await groupService.AllGroups(CurrentUserId));
+            var user = await userService.GetUser(CurrentUserId);
             if (!user.PrivateMode)
             {
                 tagViewer.ActiveTags.ForEach(item =>
@@ -55,7 +61,7 @@ namespace Memento.Web.Controllers
         [Route("includeMembers")]
         public async Task<IActionResult> GroupsAndViewers()
         {
-            var tagViewers = await GroupsService.GetNetworksAndViewersModels(CurrentUserId);
+            var tagViewers = await groupService.GetNetworksAndViewersModels(CurrentUserId);
             return Ok(tagViewers);
         }
         /*
@@ -72,7 +78,7 @@ namespace Memento.Web.Controllers
         [Route("")]
         public async Task<IActionResult> NewTag(NameRequest nameRequest)
         {
-            var networkId = GroupsService.Add(nameRequest.Name, CurrentUserId);
+            var networkId = groupService.Add(nameRequest.Name, CurrentUserId);
             return Ok(networkId);
         }
 
@@ -81,14 +87,14 @@ namespace Memento.Web.Controllers
         [Route("{groupId}/members")]
         public async Task<IActionResult> UpdateTagViewers(int groupId, SelectedIdModel model)
         {
-            return Ok(await GroupsService.UpdateNetworkViewers(CurrentUserId, groupId, model.Ids));
+            return Ok(await groupService.UpdateNetworkViewers(CurrentUserId, groupId, model.Ids));
         }
 
         [HttpDelete]
         [Route("{id}")]
         public async Task<IActionResult> Delete(long id)
         {
-            await GroupsService.Archive(id, CurrentUserId);
+            await groupService.Archive(id, CurrentUserId);
             return Ok(true);
         }
 
@@ -96,7 +102,7 @@ namespace Memento.Web.Controllers
         [Route("viewers")]
         public async Task<IActionResult> Viewers([FromQuery] LongCollectionModel model)
         {
-            return Ok(await GroupsService.GetViewers(CurrentUserId, model.Ids));
+            return Ok(await groupService.GetViewers(CurrentUserId, model.Ids));
         }
     }
 }

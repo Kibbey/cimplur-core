@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Memento.Libs;
 using Microsoft.Extensions.Options;
 using Domain.Models;
+using Domain.Repository;
 
 namespace Memento.Web.Controllers
 {
@@ -11,10 +12,16 @@ namespace Memento.Web.Controllers
     [Route("api/notifications")]
     public class NotificationController : BaseApiController
     {
-        public NotificationController(IOptions<AppSettings> appSettings)
+        private NotificationService notificationService;
+        private UserService userService;
+        public NotificationController(IOptions<AppSettings> appSettings, 
+            NotificationService notificationService,
+            UserService userService)
         {
             var settings = appSettings.Value;
             version = settings.Version;
+            this.notificationService = notificationService;
+            this.userService = userService;
         }
 
         private string version;
@@ -24,9 +31,9 @@ namespace Memento.Web.Controllers
         public async Task<IActionResult> Get()
         {
             var notifcationModel = new NotificationViewModel();
-            notifcationModel.Notifications = NotificationService.Notifications(CurrentUserId);
+            notifcationModel.Notifications = notificationService.Notifications(CurrentUserId);
             notifcationModel.Version = version;
-            var user = await UserService.GetProfile(CurrentUserId);
+            var user = await userService.GetProfile(CurrentUserId);
             notifcationModel.HasPremiumPlan = user.PremiumMember;
             return Ok(notifcationModel);
         }
@@ -36,7 +43,7 @@ namespace Memento.Web.Controllers
         [Route("")]
         public async Task<IActionResult> RemoveAll()
         {
-            NotificationService.RemoveAllNotifications(CurrentUserId);
+            notificationService.RemoveAllNotifications(CurrentUserId);
             return Ok();
         }
 
@@ -44,7 +51,7 @@ namespace Memento.Web.Controllers
         [Route("{dropId}")]
         public async Task<IActionResult> Viewed(int dropId)
         {
-            NotificationService.ViewNotification(CurrentUserId, dropId);
+            notificationService.ViewNotification(CurrentUserId, dropId);
             return Ok();
         }
     }

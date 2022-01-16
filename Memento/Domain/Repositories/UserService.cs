@@ -11,12 +11,29 @@ using System.Collections.Generic;
 using System.Configuration;
 using log4net;
 using System.Text.Json;
-
+using Domain.Emails;
 
 namespace Domain.Repository
 {
     public class UserService : BaseService
     {
+        private NotificationService notificationService;
+        private SendEmailService sendEmailService;
+        private DropsService dropService;
+        private AlbumService albumService;
+
+
+        public UserService(
+            NotificationService notificationService,
+            SendEmailService sendEmailService,
+            DropsService dropsService,
+            AlbumService albumService)
+        {
+            this.notificationService = notificationService;
+            this.albumService = albumService;
+            this.dropService = dropsService;
+            this.sendEmailService = sendEmailService;
+        }
         public async Task<int> AddUser(string email, string userName, 
             string token, bool acceptTerms, string name, List<ReasonModel> reasons)
         {
@@ -165,7 +182,6 @@ namespace Domain.Repository
             if (notification != null)
             {
                 if (notification.DropId.HasValue) {
-                    var notificationService = new NotificationService();
                     notificationService.ViewNotification(userId, notification.DropId.Value);
                     notificationService.Dispose();
                 }
@@ -205,7 +221,7 @@ namespace Domain.Repository
             Context.SaveChanges();
             //send it 
             var currentUserEmail = Context.UserProfiles.Single(x => x.UserId.Equals(CurrentUserId)).Email;
-            await Emails.SendEmailService.SendAsync(email, EmailTypes.ClaimEmail,
+            await sendEmailService.SendAsync(email, EmailTypes.ClaimEmail,
                    new { User = currentUserEmail, Token = userEmail.Token });
 
             return string.Format("Email has been sent to {0}.", email);
@@ -242,21 +258,19 @@ namespace Domain.Repository
             UserProfile userProfile = Context.UserProfiles.Single(x => x.UserId == currentUserId);
             var albums = new List<AlbumModel>();
 
-            using (var albumService = new AlbumService()) {
-                albums = await albumService.GetActive(currentUserId);
-            }
+            albums = await albumService.GetActive(currentUserId);
+
             int year = DateTime.UtcNow.Year;
             int oldestYear = 0;
-            using (var dropService = new DropsService()) {
-                var oldestDrop = await dropService.GetOldestDropYear(currentUserId);
-                if (oldestDrop != null) {
-                    oldestYear = oldestDrop.Date.Year;
-                }
-                else
-                {
-                    oldestYear = year;
-                }
+            var oldestDrop = await dropService.GetOldestDropYear(currentUserId);
+            if (oldestDrop != null) {
+                oldestYear = oldestDrop.Date.Year;
             }
+            else
+            {
+                oldestYear = year;
+            }
+            
             var years = new List<int>();
             for (var i = year; i >= oldestYear; i--) {
                 years.Add(i);

@@ -23,55 +23,57 @@ namespace Domain.Repository
     public class MovieService : BaseService
     {
         private ILog log = LogManager.GetLogger(nameof(MovieService));
-
+        private DropsService dropService;
+        public MovieService(DropsService dropsService) {
+            this.dropService = dropsService;
+        }
         public async Task<bool> Add(IFormFile file, int userId, int dropId, int? commentId)
         {
-            using (DropsService dropService = new DropsService())
+            
+            if (!dropService.CanView(userId, dropId))
             {
-                if (!dropService.CanView(userId, dropId))
-                {
-                    throw new NotAuthorizedException("You do not have acces to this memory.");
-                }
-                string movieId = dropService.DropMovieId(dropId, userId, commentId);
-                if (movieId == null)
-                {
-                    return false;
-                }
-                string name = GetName(dropId, movieId, userId);
+                throw new NotAuthorizedException("You do not have acces to this memory.");
+            }
+            string movieId = dropService.DropMovieId(dropId, userId, commentId);
+            if (movieId == null)
+            {
+                return false;
+            }
+            string name = GetName(dropId, movieId, userId);
 
-                Stream stream = file.OpenReadStream();
+            Stream stream = file.OpenReadStream();
 
-                try
+            try
+            {
+                // Create S3 service client.             
+                using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
                 {
-                    // Create S3 service client.             
-                    using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
+
+                    // Setup request for putting an object in S3.                 
+                    PutObjectRequest request = new PutObjectRequest
                     {
-
-                        // Setup request for putting an object in S3.                 
-                        PutObjectRequest request = new PutObjectRequest
-                        {
-                            BucketName = BucketName + "/temp",
-                            Key = name,
-                            InputStream = stream,
-                            ContentType = file.ContentType,
-                        };
-                        PutObjectResponse response = await s3Client.PutObjectAsync(request);
-                        if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
-                        {
-                            dropService.RemoveMovieId(movieId);
-                            return false;
-                        }
-
+                        BucketName = BucketName + "/temp",
+                        Key = name,
+                        InputStream = stream,
+                        ContentType = file.ContentType,
+                    };
+                    PutObjectResponse response = await s3Client.PutObjectAsync(request);
+                    if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
+                    {
+                        dropService.RemoveMovieId(movieId);
+                        return false;
                     }
 
-                    await Transcode(name);
                 }
-                catch (Exception e)
-                {
-                    dropService.RemoveMovieId(movieId);
-                    throw e;
-                }
+
+                await Transcode(name);
             }
+            catch (Exception e)
+            {
+                dropService.RemoveMovieId(movieId);
+                throw e;
+            }
+            
             return true;
         }
 
@@ -86,7 +88,6 @@ namespace Domain.Repository
                 {
                     int dropId = image.DropId;
                     int imageUserId = image.CommentId.HasValue ? image.Comment.UserId : image.Drop.CreatedBy.UserId;
-                    var dropService = new DropsService();
                     if (dropService.CanView(userId,dropId))
                     {
                         using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
@@ -124,7 +125,6 @@ namespace Domain.Repository
             {
                 int dropId = image.DropId;
                 int imageUserId = image.CommentId.HasValue ? image.Comment.UserId : image.Drop.CreatedBy.UserId;
-                var dropService = new DropsService();
                 if (dropService.CanView(userId, dropId))
                 {
                     using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))

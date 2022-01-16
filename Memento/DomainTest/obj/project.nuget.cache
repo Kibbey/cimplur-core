@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "eS+jKh0NxtnCxPRbg1ph/B9xfoimE+hgLIijqnN0eVtZ979C0AIKvRsFAffyNzx83HdukQZt1X0BfO+zX1ihHA==",
+  "dgSpecHash": "28Lgq7T0ptstelSH1LSr8r+03p7tPNVWy7Zh8LuUvBET8Fxj3Gzxqy9yJBxyYwa8IWN6fI1B72M50CPmF+Tzig==",
   "success": true,
   "projectFilePath": "C:\\Users\\kibbe\\repo\\cimplur-core\\Memento\\DomainTest\\DomainTest.csproj",
   "expectedPackageFiles": [
@@ -12,8 +12,6 @@
     "C:\\Users\\kibbe\\.nuget\\packages\\log4net\\2.0.14\\log4net.2.0.14.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\magick.net-q16-anycpu\\8.5.0\\magick.net-q16-anycpu.8.5.0.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\magick.net.core\\8.5.0\\magick.net.core.8.5.0.nupkg.sha512",
-    "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.aspnet.webapi.client\\5.2.7\\microsoft.aspnet.webapi.client.5.2.7.nupkg.sha512",
-    "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.aspnet.webapi.core\\5.2.7\\microsoft.aspnet.webapi.core.5.2.7.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.aspnetcore.http.features\\5.0.13\\microsoft.aspnetcore.http.features.5.0.13.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.aspnetcore.jsonpatch\\5.0.13\\microsoft.aspnetcore.jsonpatch.5.0.13.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.aspnetcore.mvc.newtonsoftjson\\5.0.13\\microsoft.aspnetcore.mvc.newtonsoftjson.5.0.13.nupkg.sha512",
@@ -179,16 +177,5 @@
     "C:\\Users\\kibbe\\.nuget\\packages\\toolbelt.entityframeworkcore.indexattribute\\5.0.0\\toolbelt.entityframeworkcore.indexattribute.5.0.0.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\toolbelt.entityframeworkcore.indexattribute.attribute\\5.0.0\\toolbelt.entityframeworkcore.indexattribute.attribute.5.0.0.nupkg.sha512"
   ],
-  "logs": [
-    {
-      "code": "NU1701",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "Package 'Microsoft.AspNet.WebApi.Core 5.2.7' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8' instead of the project target framework 'net5.0'. This package may not be fully compatible with your project.",
-      "libraryId": "Microsoft.AspNet.WebApi.Core",
-      "targetGraphs": [
-        "net5.0"
-      ]
-    }
-  ]
+  "logs": []
 }

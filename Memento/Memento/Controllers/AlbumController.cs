@@ -1,4 +1,5 @@
 ﻿using Domain.Models;
+using Domain.Repository;
 using Memento.Libs;
 using Memento.Web.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -10,19 +11,25 @@ namespace Memento.Web.Controllers
     [Route("api/albums")]
     public class AlbumController : BaseApiController
     {
+        private AlbumService albumService;
+        private ExportService exportService;
+        public AlbumController(AlbumService albumService, ExportService exportService) {
+            this.albumService = albumService;
+            this.exportService = exportService;
+        }
 
         [HttpGet]
         [Route("")]
         public async Task<IActionResult> GetAll()
         {
-            return Ok(await AlbumService.GetAll(CurrentUserId));
+            return Ok(await albumService.GetAll(CurrentUserId));
         }
 
         [HttpGet]
         [Route("{id}")]
         public async Task<IActionResult> Get(int id)
         {
-            return Ok(await AlbumService.Get(CurrentUserId, id));
+            return Ok(await albumService.Get(CurrentUserId, id));
         }
 
         [HttpPut]
@@ -33,7 +40,7 @@ namespace Memento.Web.Controllers
                 return BadRequest("Albums must have a name.");
             }
 
-            return Ok(await AlbumService.Update(CurrentUserId, id, albumModel.Name, albumModel.Archived));
+            return Ok(await albumService.Update(CurrentUserId, id, albumModel.Name, albumModel.Archived));
         }
 
         [HttpPost]
@@ -45,14 +52,14 @@ namespace Memento.Web.Controllers
                 return BadRequest("Albums must have a name.");
             }
 
-            return Ok(await AlbumService.Create(CurrentUserId, album.Name));
+            return Ok(await albumService.Create(CurrentUserId, album.Name));
         }
 
         [HttpDelete]
         [Route("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            await AlbumService.Delete(CurrentUserId, id);
+            await albumService.Delete(CurrentUserId, id);
             return Ok();
         }
 
@@ -61,14 +68,14 @@ namespace Memento.Web.Controllers
         [Route("moments/{id}")]
         public async Task<IActionResult> GetAlbumByMoment(int id)
         {
-            return Ok(await AlbumService.GetAlbumsForMoment(CurrentUserId, id));
+            return Ok(await albumService.GetAlbumsForMoment(CurrentUserId, id));
         }
 
         [HttpPost]
         [Route("{id}/exports")]
         public async Task<IActionResult> Export(int id)
         {
-            await ExportService.ExportAlbum(CurrentUserId, id);
+            await exportService.ExportAlbum(CurrentUserId, id);
             return Ok();
         }
 
@@ -76,7 +83,7 @@ namespace Memento.Web.Controllers
         [Route("{id}/moments")]
         public async Task<IActionResult> AddToMoment(int id, MomentAlbumRequestModel momentAlbumRequestModel)
         {
-            await AlbumService.AddToMoment(CurrentUserId, id, momentAlbumRequestModel.MomentId);
+            await albumService.AddToMoment(CurrentUserId, id, momentAlbumRequestModel.MomentId);
             return Ok();
         }
 
@@ -84,7 +91,7 @@ namespace Memento.Web.Controllers
         [Route("{id}/moments/{momentId}")]
         public async Task<IActionResult> DeleteToMoment(int id, int momentId)
         {
-            await AlbumService.RemoveToMoment(CurrentUserId, id, momentId);
+            await albumService.RemoveToMoment(CurrentUserId, id, momentId);
             return Ok();
         }
     }

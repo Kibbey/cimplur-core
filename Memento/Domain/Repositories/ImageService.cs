@@ -18,46 +18,50 @@ namespace Domain.Repository
     public class ImageService : BaseService
     {
         private ILog log = LogManager.GetLogger(nameof(ImageService));
+        private DropsService dropService;
+
+        public ImageService(DropsService dropsService) {
+            this.dropService = dropsService;
+        }
 
         public async Task<bool> Add(IFormFile file, int userId, int dropId, int? commentId)
         {
-            using (DropsService dropService = new DropsService())
-            {
-                string imageId = dropService.DropImageId(dropId, userId, commentId);
-                if (imageId == null)
-                {
-                    return false;
-                }
-                string name = GetName(dropId, imageId, userId);
 
-                Stream stream;
-                try {
-                    stream = ReSizeImage(file);
-                    // Create S3 service client.             
-                    using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
-                    {                 // Setup request for putting an object in S3.                 
-                        PutObjectRequest request = new PutObjectRequest
-                        {
-                            BucketName = BucketName,
-                            Key = name,
-                            InputStream = stream,
-                            ContentType = "image/jpeg",
-                        };
-                        PutObjectResponse response = await s3Client.PutObjectAsync(request);
-                        if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
-                        {
-                            dropService.RemoveImageId(imageId);
-                            return false;
-                        }
+            string imageId = dropService.DropImageId(dropId, userId, commentId);
+            if (imageId == null)
+            {
+                return false;
+            }
+            string name = GetName(dropId, imageId, userId);
+
+            Stream stream;
+            try {
+                stream = ReSizeImage(file);
+                // Create S3 service client.             
+                using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
+                {                 // Setup request for putting an object in S3.                 
+                    PutObjectRequest request = new PutObjectRequest
+                    {
+                        BucketName = BucketName,
+                        Key = name,
+                        InputStream = stream,
+                        ContentType = "image/jpeg",
+                    };
+                    PutObjectResponse response = await s3Client.PutObjectAsync(request);
+                    if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
+                    {
+                        dropService.RemoveImageId(imageId);
+                        return false;
                     }
                 }
-                catch (Exception e)
-                {
-                    dropService.RemoveImageId(imageId);
-                    throw e;
-                }
-                stream.Dispose();
             }
+            catch (Exception e)
+            {
+                dropService.RemoveImageId(imageId);
+                throw e;
+            }
+            stream.Dispose();
+            
             return true;
         }
 
@@ -69,7 +73,6 @@ namespace Domain.Repository
             {
                 int dropId = image.DropId;
                 int imageUserId = image.CommentId.HasValue ? image.Comment.UserId : image.Drop.CreatedBy.UserId;
-                var dropService = new DropsService();
                 if (dropService.CanView(userId, dropId))
                 {
                     using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))

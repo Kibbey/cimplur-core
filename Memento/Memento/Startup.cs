@@ -1,15 +1,13 @@
+using Domain.Emails;
 using Domain.Models;
+using Domain.Repository;
 using Memento.Libs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using Newtonsoft;
 
 
 namespace Memento
@@ -28,8 +26,20 @@ namespace Memento
         {
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
             services.AddScoped<UserWebToken, UserWebToken>();
+            services.AddScoped<SendEmailService, SendEmailService>();
+            services.AddScoped<NotificationService, NotificationService>();
+            services.AddScoped<DropsService, DropsService>();
+            services.AddScoped<SharingService, SharingService>();
+            services.AddScoped<AlbumService, AlbumService>();
+            services.AddScoped<GroupService, GroupService>();
+            services.AddScoped<MovieService, MovieService>();
+            services.AddScoped<PromptService, PromptService>();
+            services.AddScoped<ImageService, ImageService>();
+            services.AddScoped<TimelineService, TimelineService>();
+            services.AddScoped<UserService, UserService>();
+            services.AddScoped<PlanService, PlanService>();
+            services.AddScoped<ContactService, ContactService>();
             services.AddControllers().AddNewtonsoftJson(); ;
-            //services.AddExceptionHandler();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Memento", Version = "v1" });

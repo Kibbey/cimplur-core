@@ -18,6 +18,24 @@ namespace Domain.Repository
     public class SharingService : BaseService
     {
         private ILog log = LogManager.GetLogger(nameof(SharingService));
+        private SendEmailService sendEmailService;
+        private NotificationService notificationService;
+        private PromptService promptService;
+        private TimelineService timelineService;
+        private GroupService groupService;
+
+        public SharingService(
+            SendEmailService sendEmailService, 
+            NotificationService notificationService,
+            PromptService promptService,
+            TimelineService timelineService,
+            GroupService groupService) {
+            this.sendEmailService = sendEmailService;
+            this.notificationService = notificationService;
+            this.promptService = promptService;
+            this.timelineService = timelineService;
+            this.groupService = groupService;
+        }
 
         public List<ConnectionModel> GetConnections(int userId)
         {
@@ -129,35 +147,33 @@ namespace Domain.Repository
                         return result;
                     }
                     template = EmailTypes.ConnectionRequest;
-                    var notificationService = new NotificationService();
                     notificationService.AddNotificationGeneric(currentUsrId, targetUser.UserId, currentUsrId, NotificationType.Share).Wait();
                 }
                 var question = string.Empty;
                 var timelineName = string.Empty;
                 if (connectionRequestModel.PromptId.HasValue) {
-                    using (var promptService = new PromptService()) {
-                        var prompt = await promptService.GetAskedPrompt(currentUsrId, connectionRequestModel.PromptId.Value);
-                        question = prompt.Question;
-                        template = EmailTypes.ConnectionRequest == template ? EmailTypes.ConnectionRequestQuestion : EmailTypes.ConnectionRequestNewUserQuestion;
-                    }
+
+                    var prompt = await promptService.GetAskedPrompt(currentUsrId, connectionRequestModel.PromptId.Value);
+                    question = prompt.Question;
+                    template = EmailTypes.ConnectionRequest == template ? EmailTypes.ConnectionRequestQuestion : EmailTypes.ConnectionRequestNewUserQuestion;
+                    
                 }
                 if (connectionRequestModel.TimelineId.HasValue)
                 {
-                    using (var timelineService = new TimelineService())
-                    {
-                        var timeline = await timelineService.GetTimeline(currentUsrId, connectionRequestModel.TimelineId.Value);
-                        timelineName = timeline.Name;
-                        template = EmailTypes.ConnectionRequest == template ? EmailTypes.TimelineInviteExisting : EmailTypes.TimelineInviteNew;
-                    }
+
+                    var timeline = await timelineService.GetTimeline(currentUsrId, connectionRequestModel.TimelineId.Value);
+                    timelineName = timeline.Name;
+                    template = EmailTypes.ConnectionRequest == template ? EmailTypes.TimelineInviteExisting : EmailTypes.TimelineInviteNew;
+                    
                 }
 
-                SendEmailService.SendAsync(connectionRequestModel.Email, template,
+                this.sendEmailService.SendAsync(connectionRequestModel.Email, template,
                     new { User = connectionRequestModel.RequestorName, 
                         Question = question, 
                         TimelineName = timelineName, 
                         Token = request.RequestKey.ToString() });
 
-                SendEmailService.SendAsync(Constants.Email, EmailTypes.InviteNotice,
+                this.sendEmailService.SendAsync(Constants.Email, EmailTypes.InviteNotice,
                     new { Name = connectionRequestModel.RequestorName });
 
                 Context.ShareRequests.RemoveRange(Context.ShareRequests.Where(x => x.TargetsEmail.Equals(request.TargetsEmail) && x.RequesterUserId.Equals(currentUsrId)));
@@ -188,7 +204,7 @@ namespace Domain.Repository
             if (invitation == null) throw new NotFoundException();
             if (!CanRemind(invitation.UpdatedAt)) throw new NotAuthorizedException("You can not send a reminder yet.");
             var template = invitation.TargetsUserId.HasValue ? EmailTypes.ConnectionRequest : EmailTypes.ConnectionRequestNewUser;
-            SendEmailService.SendAsync(invitation.TargetsEmail, template,
+            this.sendEmailService.SendAsync(invitation.TargetsEmail, template,
                     new { User = invitation.RequestorName, Token = invitation.RequestKey.ToString() });
             invitation.UpdatedAt = DateTime.UtcNow;
             await Context.SaveChangesAsync();
@@ -358,19 +374,19 @@ namespace Domain.Repository
 
                     await Context.SaveChangesAsync().ConfigureAwait(false);
                     if (request.PromptId.HasValue) {
-                        using (var promptService = new PromptService()) {
-                            await promptService.AskQuestion(request.RequesterUserId , new List<int> { userId }, request.PromptId.Value);
-                        }
+
+                        await promptService.AskQuestion(request.RequesterUserId , new List<int> { userId }, request.PromptId.Value);
+                        
                     }
 
                     var requestor = await Context.UserProfiles.SingleAsync(x => x.UserId.Equals(request.RequesterUserId)).ConfigureAwait(false);
                     Task.Run(() =>
-                        SendEmailService.SendAsync(requestor.Email,
+                        this.sendEmailService.SendAsync(requestor.Email,
                         EmailTemplates.EmailTypes.ConnecionSuccess, new { User = targetName })
                         );
                     await ConnectFamilyPlan(userId).ConfigureAwait(false);
                     await ProcessProfile(userId).ConfigureAwait(false);
-                    await new GroupService().PopulateEveryone(userId).ConfigureAwait(false);
+                    await groupService.PopulateEveryone(userId).ConfigureAwait(false);
                     return new ViewerNetworksModel { Tags = tagModels, Viewer = new PersonModelV2 { Name = name, Id = request.RequestingUser.UserId  } };
                 }
             }
@@ -634,27 +650,27 @@ namespace Domain.Repository
             if (requests.Any() && !recentRequest)
             {
                 requests.Select(s => s.Name);
-                await SendEmailService.SendAsync(email, EmailTypes.Requests,
+                await this.sendEmailService.SendAsync(email, EmailTypes.Requests,
                     new { Name = requests.First() }).ConfigureAwait(false);
             }
             else if (suggestions.Any())
             {
                 var suggestionName = suggestions.OrderByDescending(o => o.Id).Select(s => s.Name).First();
-                await SendEmailService.SendAsync(email, EmailTypes.Suggestions,
+                await this.sendEmailService.SendAsync(email, EmailTypes.Suggestions,
                     new { Name = suggestionName }).ConfigureAwait(false);
             }
         }
 
         private async Task FindAndEmailQuestions(int userId, string email)
         {
-            using (var promptService = new PromptService()) {
-                var prompts = await promptService.GetPromptsAskedToMe(userId).ConfigureAwait(false);
-                if (prompts.Any()) {
-                    var prompt = prompts.OrderByDescending(o => o.PromptId).First();
-                    await SendEmailService.SendAsync(email, EmailTypes.QuestionReminders,
-                     new { Name = prompt.Askers.FirstOrDefault()?.Name ?? "", prompt.Question }).ConfigureAwait(false);
-                }
+
+            var prompts = await promptService.GetPromptsAskedToMe(userId).ConfigureAwait(false);
+            if (prompts.Any()) {
+                var prompt = prompts.OrderByDescending(o => o.PromptId).First();
+                await this.sendEmailService.SendAsync(email, EmailTypes.QuestionReminders,
+                    new { Name = prompt.Askers.FirstOrDefault()?.Name ?? "", prompt.Question }).ConfigureAwait(false);
             }
+            
         }
 
         private async Task UpdateSuggestionNotifications(int userId, bool ignoreChanges = false) {

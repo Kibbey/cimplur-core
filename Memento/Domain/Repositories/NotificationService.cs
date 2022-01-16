@@ -15,6 +15,13 @@ namespace Domain.Repository
 {
     public class NotificationService : BaseService
     {
+        public NotificationService(SendEmailService sendEmailService, GroupService groupService) {
+            this.sendEmailService = sendEmailService;
+            this.groupService = groupService;
+        }
+
+        private SendEmailService sendEmailService;
+        private GroupService groupService;
         private ILog logger = log4net.LogManager.GetLogger(typeof(NotificationService).Name);
 
         public async Task AddNotificationDropAdded(int userId, HashSet<long> networkIds, int dropId)
@@ -22,8 +29,7 @@ namespace Domain.Repository
             // failure to add a notification shouldn't fubar the system
             try
             {
-                var groupsService = new GroupService();
-                var tagUsers = await groupsService.GetUsersToShareWith(userId, networkIds)
+                var tagUsers = await groupService.GetUsersToShareWith(userId, networkIds)
                     .ConfigureAwait(false);
                 var user = await Context.UserProfiles.SingleAsync(x => x.UserId == userId).ConfigureAwait(false);
 
@@ -42,7 +48,7 @@ namespace Domain.Repository
                         //only send an email if they haven't gotten a notification in the last hour
                         if (lastNotification == null)
                         {
-                            await groupsService.SendEmail(targetUser.OwnerUser.Email, targetUser.ReaderName ?? user.UserName, dropId, EmailTypes.EmailNotification);
+                            await groupService.SendEmail(targetUser.OwnerUser.Email, targetUser.ReaderName ?? user.UserName, dropId, EmailTypes.EmailNotification);
                             Context.SharedDropNotifications.Add(new Entities.SharedDropNotification {
                                 TargetUserId = viewer,
                                 DropId = dropId,
@@ -172,7 +178,7 @@ namespace Domain.Repository
                     if (emailTypes.HasValue) {
                         var payloadExtended = (IDictionary<string, object>)payload;
                         payloadExtended.Add("User", name);
-                        await SendEmailService.SendAsync(targetUser.Email, emailTypes.Value, payload);
+                        await this.sendEmailService.SendAsync(targetUser.Email, emailTypes.Value, payload);
                     }
                 }
             } catch (Exception e) {

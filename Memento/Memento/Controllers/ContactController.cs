@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Memento.Libs;
+using Domain.Repository;
 
 namespace Memento.Web.Controllers
 {
@@ -11,6 +12,10 @@ namespace Memento.Web.Controllers
     [Route("api/contacts")]
     public class ContactController : BaseApiController
     {
+        private ContactService contactService;
+        public ContactController(ContactService contactService) {
+            this.contactService = contactService;
+        }
 
         [HttpPost]
         [Route("")]
@@ -19,7 +24,7 @@ namespace Memento.Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                await ContactService.SendMessage(model.Email, model.Name, System.Web.HttpUtility.HtmlEncode(model.Content), CurrentUserId);
+                await contactService.SendMessage(model.Email, model.Name, System.Web.HttpUtility.HtmlEncode(model.Content), CurrentUserId);
                 return Ok();
             }
 
@@ -34,7 +39,7 @@ namespace Memento.Web.Controllers
         public async Task<IActionResult> SendEmail(string id)
         {
             if (id == emailMessage) {
-                await ContactService.SendEmailToUsers();
+                await contactService.SendEmailToUsers();
             }
             return Ok();
         }

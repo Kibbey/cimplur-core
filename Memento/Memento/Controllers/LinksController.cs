@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Memento.Libs;
+using Domain.Repository;
 
 namespace Memento.Web.Controllers
 {
@@ -12,10 +13,12 @@ namespace Memento.Web.Controllers
     [Route("api/links")]
     public class LinksController : BaseApiController
     {
+        private UserService userService;
         private UserWebToken _userWebToken;
-        public LinksController(UserWebToken userWebToken)
+        public LinksController(UserWebToken userWebToken, UserService userService)
         {
             _userWebToken = userWebToken;
+            this.userService = userService;
         }
 
         [HttpGet]
@@ -33,7 +36,7 @@ namespace Memento.Web.Controllers
                 var linkToken = EmailSafeLinkCreator.RetrieveLink(route);
                 if (!string.IsNullOrWhiteSpace(linkToken))
                 {
-                    var userId = await UserService.ValidateToken(linkToken);
+                    var userId = await userService.ValidateToken(linkToken);
                     if (userId.HasValue && CurrentUserId != userId) {
                         var token = _userWebToken.generateJwtToken(userId.Value);
                         CookieHelper.SetAuthToken(token, HttpContext);

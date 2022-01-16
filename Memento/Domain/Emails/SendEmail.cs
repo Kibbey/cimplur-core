@@ -7,55 +7,24 @@ using Domain.Repository;
 using System.Dynamic;
 using System.Collections.Generic;
 using Domain.Utilities;
+using Domain.Models;
+using Microsoft.Extensions.Options;
 
 namespace Domain.Emails
 {
-    public static class SendEmailService
+    public class SendEmailService
     {
-        //public static void Send(string email, EmailTypes template, object model)
-        //{
-        //    SendAsync(email, template, model).ConfigureAwait(false);
-        //}
-        /* Keep for a quick flip in case of issues
-         * 
-         * - this goes in the caller to the below 
-            var emailer = new Domain.Email.SendEmailService();
-            var mailMessage = new MailMessage();
-            // so we have some accounts - Kibbey kids - without email addresses
-            if (!string.IsNullOrWhiteSpace(email)) {
-                mailMessage.To.Add(email);
-                emailer.Send(mailMessage, template, model);
-            }
-        private static void Send(MailMessage mailMessage, EmailTypes TemplateName, object Model)
-        {
-            if (mailMessage.From == null || string.IsNullOrEmpty(mailMessage.From.Address))
-            {
-                string from = "Fyli";
-                if (TemplateName == EmailTypes.ConnectionRequest || TemplateName == EmailTypes.ConnectionRequestNewUser) {
-                    from = $"{Model.GetType().GetProperty("User").GetValue(Model, null)} via Fyli";
-                }  
-                mailMessage.From = new MailAddress(EmailAddress, from);
-            }
+        private UserService userService;
+        public SendEmailService(IOptions<AppSettings> appSettings, UserService userService) {
+            var settings = appSettings.Value;
+            InProduction = settings.Production;
+            EmailAddress = settings.Owner;
+            EmailPW = settings.EmailCode;
+            PostMarkToken = settings.EmailToken;
+            this.userService = userService;
+        }
 
-            mailMessage.Body = Email.EmailRender.GetStringFromView(EmailTemplates.GetTemplateByName(TemplateName), Model);
-            mailMessage.Subject = Email.EmailRender.GetStringFromView(EmailTemplates.GetSubjectByName(TemplateName), Model);
-            mailMessage.IsBodyHtml = true;
-            mailMessage.BodyEncoding = Encoding.UTF8;
-           
-            if (InProduction)
-            {
-                var smtpClient = new SmtpClient();
-                smtpClient.Host = "smtp.gmail.com";
-                smtpClient.EnableSsl = true;
-                smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
-                smtpClient.UseDefaultCredentials = false;
-                smtpClient.Port = 587;
-                smtpClient.Credentials = new System.Net.NetworkCredential(EmailAddress, EmailPW);
-                smtpClient.Send(mailMessage);
-            }
-        }*/
-
-        public static async Task SendAsync(string email, EmailTypes template, object model)
+        public async Task SendAsync(string email, EmailTypes template, object model)
         {
             var extendedModel = await AddTokenToModel(email, template, model).ConfigureAwait(false);
             var from = GetFrom(template, model);
@@ -67,7 +36,7 @@ namespace Domain.Emails
             await SendPostmarkEmail(email, from, subject, text, body, template.ToString(), subject).ConfigureAwait(false);
         }
 
-        private static async Task<ExpandoObject> AddTokenToModel(string email, EmailTypes template, object model) {
+        private async Task<ExpandoObject> AddTokenToModel(string email, EmailTypes template, object model) {
             var expando = new ExpandoObject();
             IDictionary<string, object> dictionary;
             if (model is ExpandoObject)
@@ -108,11 +77,9 @@ namespace Domain.Emails
             EmailTypes.QuestionReminders
         };
 
-        private static async Task<string> CreateLinkToken(string email) {
-            using (var userService = new UserService()) {
-                var token = await userService.CreateLinkToken(email).ConfigureAwait(false);
-                return token.Success ? token.Token : string.Empty;
-            }
+        private async Task<string> CreateLinkToken(string email) {
+            var token = await userService.CreateLinkToken(email).ConfigureAwait(false);
+            return token.Success ? token.Token : string.Empty;
         }
 
         public static string GetFrom(EmailTypes emailTypes, object Model) {
@@ -176,10 +143,10 @@ namespace Domain.Emails
         }
 
         private static string htmlTagPattern = "<.*?>";
-        private static bool InProduction = Convert.ToBoolean(ConfigurationFactory.GetConfigurationValue("Production") ?? "false");
-        private static string EmailAddress = ConfigurationFactory.GetConfigurationValue("Owner") ?? "";
-        private static string EmailPW = ConfigurationFactory.GetConfigurationValue("EmailCode") ?? "";
-        private static string PostMarkToken = ConfigurationFactory.GetConfigurationValue("EmailToken") ?? "";
+        private static bool InProduction = false;
+        private static string EmailAddress = "";
+        private static string EmailPW = "";
+        private static string PostMarkToken = "";
     }
 }
 

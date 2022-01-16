@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Memento.Libs;
 using Microsoft.AspNetCore.Http;
+using Domain.Repository;
 
 namespace Memento.Web.Controllers
 {
@@ -11,6 +12,14 @@ namespace Memento.Web.Controllers
     [Route("api/images")]
     public class ImageController : BaseApiController
     {
+        private ImageService imageService;
+        private MovieService movieService;
+        public ImageController(
+            ImageService imageService,
+            MovieService movieService) {
+            this.imageService = imageService;
+            this.movieService = movieService;
+        }
 
         [HttpGet]
         [Route("{id}")]
@@ -19,7 +28,7 @@ namespace Memento.Web.Controllers
             Stream image = null;
             try
             {
-                image = await ImageService.Get(id, CurrentUserId);
+                image = await this.imageService.Get(id, CurrentUserId);
             }
             catch (Exception e)
             {
@@ -57,11 +66,11 @@ namespace Memento.Web.Controllers
             {
                 if (file.ContentType.Split('/')[0] == "video")
                 {
-                    result = await MovieService.Add(file, CurrentUserId, dropId, commentId);
+                    result = await this.movieService.Add(file, CurrentUserId, dropId, commentId);
                 }
                 if (file.ContentType.Split('/')[0] == "image" || file.FileName.ToLower().Contains(".heic"))
                 {
-                    result = await ImageService.Add(file, CurrentUserId, dropId, commentId);
+                    result = await imageService.Add(file, CurrentUserId, dropId, commentId);
                 }
             }
             return Ok(result);

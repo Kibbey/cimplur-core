@@ -1,7 +1,6 @@
 ﻿using Domain.Models;
 using Domain.Entities;
 using Domain.Exceptions;
-using Stripe;
 using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +13,17 @@ namespace Domain.Repository
 {
     public class TimelineService : BaseService
     {
+        private NotificationService notificationService;
+        private DropsService dropService;
+        private SharingService connectionService;
+        public TimelineService(
+            NotificationService notificationSevice,
+            DropsService dropsService,
+            SharingService connectionService) {
+            this.notificationService = notificationSevice;
+            this.dropService = dropsService;
+            this.connectionService = connectionService;
+        }
         public async Task<TimelineModel> AddTimeline(int currentUserId, string name, string description)
         {
             var now = DateTime.UtcNow;
@@ -105,16 +115,14 @@ namespace Domain.Repository
                 Context.TimelineUsers.Add(timelineUser);
             }
             await Context.SaveChangesAsync();
-            using (var notificationsService = new NotificationService()) {
-                foreach (var person in needAdded)
-                {
-                    dynamic payload = new ExpandoObject();
-                    payload.TimelineName = timeline.Name;
-                    payload.TimelineId = timeline.TimelineId;
-                    await notificationsService.AddNotificationGeneric(currentUserId, person, timelineId, NotificationType.Timeline,
-                        EmailTypes.TimelineShare, payload);
-                } 
-            }
+            foreach (var person in needAdded)
+            {
+                dynamic payload = new ExpandoObject();
+                payload.TimelineName = timeline.Name;
+                payload.TimelineId = timeline.TimelineId;
+                await notificationService.AddNotificationGeneric(currentUserId, person, timelineId, NotificationType.Timeline,
+                    EmailTypes.TimelineShare, payload);
+            } 
         }
 
         public async Task<TimelineModel> UpdateTimeline(int currentUserId, int timelineId, string name, string description)
@@ -155,10 +163,9 @@ namespace Domain.Repository
         public async Task<List<TimelineModel>> GetAllTimelines(int currentUserId)
         {
             var connectedUserIds = new List<int>();
-            using (var connectionService = new SharingService())
-            {
-                connectedUserIds = connectionService.GetConnections(currentUserId).Select(s => s.Id).ToList();
-            }
+
+            connectedUserIds = connectionService.GetConnections(currentUserId).Select(s => s.Id).ToList();
+            
             connectedUserIds.Add(currentUserId);
             // we show timelines that your connections have created or are following
             var timelines = await Context.Timelines
@@ -180,9 +187,8 @@ namespace Domain.Repository
 
         public async Task AddDropToTimeline(int currentUserId, int dropId, int timelineId)
         {
-            using (var dropService = new DropsService()) {
-                if(!dropService.CanView(currentUserId, dropId)) throw new NotAuthorizedException("You can not view this memory");
-            }
+            if(!dropService.CanView(currentUserId, dropId)) throw new NotAuthorizedException("You can not view this memory");
+            
             // check it is a valid timeline
             if (await HasAccess(currentUserId, timelineId)) {
                 Context.TimelineDrops.Add(new TimelineDrop { 

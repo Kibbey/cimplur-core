@@ -7,13 +7,19 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Text.Json;
+using Newtonsoft;
 using static Domain.Emails.EmailTemplates;
+using Domain.Emails;
+using Newtonsoft.Json;
 
 namespace Domain.Repository
 {
     public class GroupService : BaseService
     {
+        private SendEmailService sendEmailService;
+        public GroupService(SendEmailService sendEmailService) {
+            this.sendEmailService = sendEmailService;
+        }
         /// <summary>
         /// Add tag to the system.  If it exists return the existing id.
         /// </summary>
@@ -268,7 +274,7 @@ namespace Domain.Repository
             var currentTagIds = Context.UserProfiles.First(x => x.UserId == userId).CurrentTagIds;
             if (currentTagIds != null)
             {
-                networkIds = JsonSerializer.Deserialize<List<long>>(currentTagIds);
+                networkIds = JsonConvert.DeserializeObject<List<long>>(currentTagIds);
             }
             var tags = ActiveNetworks(userId).Where(x => networkIds.Contains(x.UserTagId)).Select(s => new GroupModel
             {
@@ -325,7 +331,7 @@ namespace Domain.Repository
 
         public void SaveCurrentPeople(int userId, List<PersonModelV2> people)
         {
-            string currentPeople = JsonSerializer.Serialize(people);
+            string currentPeople = JsonConvert.SerializeObject(people);
             var user = Context.UserProfiles.First(x => x.UserId == userId);
             user.CurrentPeople = currentPeople;
             user.CurrentTagIds = "[]";
@@ -360,12 +366,12 @@ namespace Domain.Repository
 
         public void SaveCurrentNetworks(int userId, List<long> userTagIds)
         {
-            string currentTagIds = JsonSerializer.Serialize(userTagIds);
+            string currentTagIds = JsonConvert.SerializeObject(userTagIds);
             var user = Context.UserProfiles.First(x => x.UserId == userId);
             if (userTagIds != null && userTagIds.Any()) {
                 // we don't allow tagIds and people filters on it
                 user.Me = false;
-                user.CurrentPeople = JsonSerializer.Serialize(new List<string>());
+                user.CurrentPeople = JsonConvert.SerializeObject(new List<string>());
             }
             user.CurrentTagIds = currentTagIds;
             user.Skip = 0;
@@ -462,7 +468,7 @@ namespace Domain.Repository
 
         public async Task SendEmail(string email, string userName, int dropId, EmailTypes template)
         {
-            await Emails.SendEmailService.SendAsync(email, template, new { User = userName, DropId = dropId.ToString() });
+            await sendEmailService.SendAsync(email, template, new { User = userName, DropId = dropId.ToString() });
         }
 
         public async Task<string> Rename(int currentUserId, int networkId, string name)

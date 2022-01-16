@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Domain.Repository;
 using Memento.Libs;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,18 +10,26 @@ namespace Memento.Web.Controllers
     public class StreamController : BaseApiController
     {
 
+        private UserService userService;
+        private GroupService groupService;
+        public StreamController(
+            UserService userService,
+            GroupService groupService) {
+            this.userService = userService;
+            this.groupService = groupService;
+        }
         [HttpGet]
         [Route("filters")]
         public async Task<IActionResult> GetFilters()
         {
-            return Ok(await UserService.GetFilter(CurrentUserId));
+            return Ok(await userService.GetFilter(CurrentUserId));
         }
 
         [HttpPut]
         [Route("groups")]
         public async Task<IActionResult> ClearGroups()
         {
-            GroupsService.ClearTags(CurrentUserId);
+            groupService.ClearTags(CurrentUserId);
             return Ok();
         }
 
@@ -28,7 +37,7 @@ namespace Memento.Web.Controllers
         [Route("groups/{id}")]
         public async Task<IActionResult> UpdateTag(int id)
         {
-            GroupsService.UpdateCurrentNetwork(CurrentUserId, id);
+            groupService.UpdateCurrentNetwork(CurrentUserId, id);
             return Ok();
         }
 
@@ -36,7 +45,7 @@ namespace Memento.Web.Controllers
         [Route("people/{id}")]
         public async Task<IActionResult> AddPerson(int id)
         {
-            GroupsService.AddToCurrentPeople(CurrentUserId, id);
+            groupService.AddToCurrentPeople(CurrentUserId, id);
             return Ok();
         }
 
@@ -44,7 +53,7 @@ namespace Memento.Web.Controllers
         [Route("groups/{id}")]
         public async Task<IActionResult> RemoveTag(int id)
         {
-            GroupsService.RemoveFromCurrentNetworks(CurrentUserId, id);
+            groupService.RemoveFromCurrentNetworks(CurrentUserId, id);
             return Ok();
         }
 
@@ -52,7 +61,7 @@ namespace Memento.Web.Controllers
         [Route("people/{id}")]
         public async Task<IActionResult> RemovePerson(int id)
         {
-            GroupsService.RemoveFromCurrentPeople(CurrentUserId, id);
+            groupService.RemoveFromCurrentPeople(CurrentUserId, id);
             return Ok();
         }
     }

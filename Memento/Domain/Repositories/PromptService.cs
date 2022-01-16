@@ -13,6 +13,22 @@ namespace Domain.Repository
 {
     public class PromptService : BaseService
     {
+        private SendEmailService sendEmailService;
+        private TimelineService timelineService;
+        private DropsService dropService;
+        private UserService userService;
+        
+        public PromptService(SendEmailService sendEmailService,
+            TimelineService timelineService,
+            DropsService dropsService,
+            UserService userService
+            ) {
+            this.sendEmailService = sendEmailService;
+            this.timelineService = timelineService;
+            this.dropService = dropsService;
+            this.userService = userService;
+        }
+
         public async Task<List<PromptModel>> GetActivePrompts(int currentUserId)
         {
             await SyncUserPrompts(currentUserId);
@@ -20,12 +36,10 @@ namespace Domain.Repository
                 .Where(x => x.UserId == currentUserId && !x.Dismissed.HasValue && !x.Used.HasValue && !x.Prompt.Template)
                 .OrderByDescending(o => o.Prompt.Order)
                 .ToListAsync();
-            prompts = await RelationshipPromptsToTop(prompts, currentUserId);
-            using (var userService = new UserService())
-            {
-                var nameDictionary = await userService.GetNameDictionary(currentUserId);
-                return ShuffleTop(prompts.Select(s => MapPromptModel(s, nameDictionary)).ToList());
-            }
+            prompts = await RelationshipPromptsToTop(prompts, currentUserId); 
+            var nameDictionary = await userService.GetNameDictionary(currentUserId);
+            return ShuffleTop(prompts.Select(s => MapPromptModel(s, nameDictionary)).ToList());
+            
         }
 
         public async Task<List<PromptModel>> GetPromptsAskedToMe(int currentUserId)
@@ -38,11 +52,9 @@ namespace Domain.Repository
                 .Where(x => x.Askers.Any())
                 .OrderByDescending(o => o.UserPromptId)
                 .ToListAsync();
-            using (var userService = new UserService())
-            {
-                var nameDictionary = await userService.GetNameDictionary(currentUserId);
-                return prompts.Select(s => MapPromptModel(s, nameDictionary)).ToList();
-            }
+            var nameDictionary = await userService.GetNameDictionary(currentUserId);
+            return prompts.Select(s => MapPromptModel(s, nameDictionary)).ToList();
+            
         }
 
         public async Task<List<PromptAskedModel>> GetPromptsAskedByMe(int currentUserId)
@@ -54,25 +66,24 @@ namespace Domain.Repository
                     && !x.Template)
                 .OrderByDescending(o => o.PromptId)
                 .ToListAsync();
-            using (var userService = new UserService())
-            {
-                var nameDictionary = await userService.GetNameDictionary(currentUserId);
 
-                return prompts.Select(s => new PromptAskedModel
-                {
-                    Question = s.Question,
-                    PromptId = s.PromptId,
-                    Custom = s.UserId.HasValue,
-                    Askeds = s.UserPrompts
-                            .Select(up => new Asked
-                            {
-                                Id = up.UserId,
-                                Name = nameDictionary.ContainsKey(up.UserId) ? nameDictionary[up.UserId] : "Unavailable",
-                                DropId = s.Drops.FirstOrDefault(d => d.UserId == up.UserId)?.DropId ?? 0,
-                                Connection = true
-                            })
-                }).ToList();
-            }
+            var nameDictionary = await userService.GetNameDictionary(currentUserId);
+
+            return prompts.Select(s => new PromptAskedModel
+            {
+                Question = s.Question,
+                PromptId = s.PromptId,
+                Custom = s.UserId.HasValue,
+                Askeds = s.UserPrompts
+                        .Select(up => new Asked
+                        {
+                            Id = up.UserId,
+                            Name = nameDictionary.ContainsKey(up.UserId) ? nameDictionary[up.UserId] : "Unavailable",
+                            DropId = s.Drops.FirstOrDefault(d => d.UserId == up.UserId)?.DropId ?? 0,
+                            Connection = true
+                        })
+            }).ToList();
+            
         }
 
         /// <summary>
@@ -83,41 +94,35 @@ namespace Domain.Repository
         /// <returns></returns>
         public async Task<PromptAskedModel> GetAskedPrompt(int currentUserId, int promptId)
         {
-            using (var userService = new UserService())
+            var nameDictinoary = await userService.GetNameDictionary(currentUserId);
+            var prompt = await Context.Prompts
+                .Where(p => p.PromptId == promptId && (p.UserId == currentUserId || p.UserId == null))
+                .SingleOrDefaultAsync();
+            if (prompt == null) throw new Exceptions.NotFoundException();
+            var dropsDictionary = dropService.CanViewPrompts(currentUserId, promptId)
+                    .Where(x => nameDictinoary.ContainsKey(x.OwnerId))
+                    .ToDictionary(k => k.OwnerId, v => v.DropId);
+
+            var asked = await Context.UserPromptAskers.Where(x => x.AskerId == currentUserId && x.UserPrompt.PromptId == promptId)
+                .Select(s => s.UserPrompt)
+                .ToListAsync();
+
+            var validAsked = asked.Where(x => nameDictinoary.ContainsKey(x.UserId)).ToList();
+
+            return new PromptAskedModel
             {
-                using (var dropService = new DropsService())
-                {
-                    var nameDictinoary = await userService.GetNameDictionary(currentUserId);
-                    var prompt = await Context.Prompts
-                        .Where(p => p.PromptId == promptId && (p.UserId == currentUserId || p.UserId == null))
-                        .SingleOrDefaultAsync();
-                    if (prompt == null) throw new Exceptions.NotFoundException();
-                    var dropsDictionary = dropService.CanViewPrompts(currentUserId, promptId)
-                            .Where(x => nameDictinoary.ContainsKey(x.OwnerId))
-                            .ToDictionary(k => k.OwnerId, v => v.DropId);
-
-                    var asked = await Context.UserPromptAskers.Where(x => x.AskerId == currentUserId && x.UserPrompt.PromptId == promptId)
-                        .Select(s => s.UserPrompt)
-                        .ToListAsync();
-
-                    var validAsked = asked.Where(x => nameDictinoary.ContainsKey(x.UserId)).ToList();
-
-                    return new PromptAskedModel
+                Question = prompt.Question,
+                PromptId = prompt.PromptId,
+                Custom = prompt.UserId.HasValue,
+                Askeds = validAsked
+                    .Select(s => new Asked
                     {
-                        Question = prompt.Question,
-                        PromptId = prompt.PromptId,
-                        Custom = prompt.UserId.HasValue,
-                        Askeds = validAsked
-                            .Select(s => new Asked
-                            {
-                                Id = s.UserId,
-                                Name = nameDictinoary[s.UserId],
-                                DropId = dropsDictionary.ContainsKey(s.UserId) ? dropsDictionary[s.UserId] : 0,
-                                Connection = true
-                            })
-                    };
-                }
-            }
+                        Id = s.UserId,
+                        Name = nameDictinoary[s.UserId],
+                        DropId = dropsDictionary.ContainsKey(s.UserId) ? dropsDictionary[s.UserId] : 0,
+                        Connection = true
+                    })
+            };
         }
 
         public async Task<List<PromptModel>> GetAllPrompts(int currentUserId)
@@ -171,15 +176,14 @@ namespace Domain.Repository
         /// <returns></returns>
         public async Task<PromptModel> GetPrompt(int currentUserId, int promptId)
         {
-            using (var userService = new UserService()) {
-                var nameDictinoary = await userService.GetNameDictionary(currentUserId);
-                var userPrompt = await Context.UserPrompts.Include(i => i.Prompt).Include(i => i.Askers)
-                    // you created it, are asked it, or it is a generic prompt
-                    .Where(p => p.PromptId == promptId && p.UserId == currentUserId)
-                    .SingleOrDefaultAsync();
-                if (userPrompt == null) throw new Exceptions.NotFoundException();
-                return MapPromptModel(userPrompt, nameDictinoary);
-            }
+            var nameDictinoary = await userService.GetNameDictionary(currentUserId);
+            var userPrompt = await Context.UserPrompts.Include(i => i.Prompt).Include(i => i.Askers)
+                // you created it, are asked it, or it is a generic prompt
+                .Where(p => p.PromptId == promptId && p.UserId == currentUserId)
+                .SingleOrDefaultAsync();
+            if (userPrompt == null) throw new Exceptions.NotFoundException();
+            return MapPromptModel(userPrompt, nameDictinoary);
+            
         }
 
         public async Task<PromptModel> CreatePrompt(int currentUserId, string question)
@@ -257,10 +261,10 @@ namespace Domain.Repository
             var prompt = await Context.Prompts.SingleAsync(x => x.PromptId == promptId);
             var usersEmailDictionary = await Context.UserProfiles.Where(x => userIds.Contains(x.UserId))
                 .ToDictionaryAsync(k => k.UserId, v => v.Email);
-            var nameDictionary = await new UserService().GetInverseNameDictionary(currentUserId, userIds);
+            var nameDictionary = await userService.GetInverseNameDictionary(currentUserId, userIds);
 
             userIds.ForEach(userId =>
-                            SendEmailService.SendAsync(usersEmailDictionary[userId], EmailTypes.Question,
+                            sendEmailService.SendAsync(usersEmailDictionary[userId], EmailTypes.Question,
                 new { User = nameDictionary[userId], Question = prompt.Question, Id = prompt.PromptId })
             );
             
@@ -270,17 +274,15 @@ namespace Domain.Repository
             var askedQuestions = await Context.UserPrompts.Include(x => x.Prompt).Include(x => x.Askers)
                 .Where(x => x.UserId == currentUserId && x.Askers.Any())
                 .ToListAsync();
-            using (var userService = new UserService()) {
-                var nameDictionary = await userService.GetNameDictionary(currentUserId);
-                return askedQuestions.Select(s => MapPromptModel(s, nameDictionary)).ToList();
-            }
+            var nameDictionary = await userService.GetNameDictionary(currentUserId);
+            return askedQuestions.Select(s => MapPromptModel(s, nameDictionary)).ToList();
+            
         }
 
         public async Task<List<PromptModel>> GetTimelineQuestions(int currentUserId, int timelineId) {
             TimelineModel timeline;
-            using (var timelineService = new TimelineService()) {
-                timeline = await timelineService.GetTimeline(currentUserId, timelineId);
-            }
+            timeline = await timelineService.GetTimeline(currentUserId, timelineId);
+            
             var prompts = await Context.PromptTimelines.Include(i => i.Prompt)
                 .Where(x => x.TimelineId == timelineId).ToListAsync();
             // Todo - we may want filter out ones you have already answered
@@ -294,10 +296,8 @@ namespace Domain.Repository
         public async Task<List<PromptModel>> GetAllTimelineQuestions(int currentUserId, int timelineId)
         {
             TimelineModel timeline;
-            using (var timelineService = new TimelineService())
-            {
-                timeline = await timelineService.GetTimeline(currentUserId, timelineId);
-            }
+            timeline = await timelineService.GetTimeline(currentUserId, timelineId);
+            
             var prompts = await Context.Prompts.Include(i => i.PromptTimelines)
                 .Where(x => x.Template
                     || x.PromptTimelines.Any(a => a.TimelineId == timelineId))
@@ -357,36 +357,33 @@ namespace Domain.Repository
         }
 
         private async Task<List<Prompt>> RelationshipPromptsToTop(List<Prompt> prompts, int currentUserId) {
-            using (var userService = new UserService())
+            var relationships = await userService.GetRelationships(currentUserId);
+            var hasRelationships = relationships.Any(x => x.Selected);
+            if (hasRelationships)
             {
-                var relationships = await userService.GetRelationships(currentUserId);
-                var hasRelationships = relationships.Any(x => x.Selected);
-                if (hasRelationships)
-                {
-                    var relationshipIds = relationships.Where(x => x.Selected).Select(s => s.Id).ToHashSet();
-                    prompts = prompts.Where(x => !x.Relationship.HasValue
-                        || relationshipIds.Contains((int)x.Relationship.Value))
-                        .OrderBy(x => !x.Relationship.HasValue).ToList();
-                }
-                return prompts;
+                var relationshipIds = relationships.Where(x => x.Selected).Select(s => s.Id).ToHashSet();
+                prompts = prompts.Where(x => !x.Relationship.HasValue
+                    || relationshipIds.Contains((int)x.Relationship.Value))
+                    .OrderBy(x => !x.Relationship.HasValue).ToList();
             }
+            return prompts;
+            
         }
 
         private async Task<List<UserPrompt>> RelationshipPromptsToTop(List<UserPrompt> prompts, int currentUserId)
         {
-            using (var userService = new UserService())
+
+            var relationships = await userService.GetRelationships(currentUserId);
+            var hasRelationships = relationships.Any(x => x.Selected);
+            if (hasRelationships)
             {
-                var relationships = await userService.GetRelationships(currentUserId);
-                var hasRelationships = relationships.Any(x => x.Selected);
-                if (hasRelationships)
-                {
-                    var relationshipIds = relationships.Where(x => x.Selected).Select(s => s.Id).ToHashSet();
-                    prompts = prompts.Where(x => !x.Prompt.Relationship.HasValue
-                        || relationshipIds.Contains((int)x.Prompt.Relationship.Value))
-                        .OrderBy(x => !x.Prompt.Relationship.HasValue).ToList();
-                }
-                return prompts;
+                var relationshipIds = relationships.Where(x => x.Selected).Select(s => s.Id).ToHashSet();
+                prompts = prompts.Where(x => !x.Prompt.Relationship.HasValue
+                    || relationshipIds.Contains((int)x.Prompt.Relationship.Value))
+                    .OrderBy(x => !x.Prompt.Relationship.HasValue).ToList();
             }
+            return prompts;
+            
         }
 
     }

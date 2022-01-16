@@ -11,6 +11,11 @@ namespace Domain.Repository
 {
     public class AlbumService : BaseService
     {
+        private DropsService dropService;
+        public AlbumService(DropsService dropsService) {
+            this.dropService = dropsService;
+        }
+
         public async Task<AlbumModel> Get(int userId, int albumId) {
             var album = await Context.Albums.SingleOrDefaultAsync(x => x.UserId == userId && x.AlbumId == albumId);
             if (album == null) throw new NotFoundException("Album not found");
@@ -56,10 +61,8 @@ namespace Domain.Repository
 
         public async Task<List<AlbumViewModel>> GetAlbumsForMoment(int userId, int id)
         {
-            using (var dropsService = new DropsService())
-            {
-                if (!dropsService.CanView(userId, id)) throw new NotAuthorizedException("");
-            }
+            if (!dropService.CanView(userId, id)) throw new NotAuthorizedException("");
+            
             var momentAlbums = await Context.AlbumDrops.Where(x => x.DropId == id
                 && x.Album.UserId == userId).Select(s => s.AlbumId).ToListAsync();
             var allAlbums = await GetActive(userId);
@@ -72,9 +75,8 @@ namespace Domain.Repository
 
         public async Task AddToMoment(int userId, int id, int momentId)
         {
-            using (var dropsService = new DropsService()) {
-                if(!dropsService.CanView(userId, momentId)) throw new NotAuthorizedException("");
-            }
+            if(!dropService.CanView(userId, momentId)) throw new NotAuthorizedException("");
+            
             var momentAlbum = await Context.AlbumDrops.FirstOrDefaultAsync(x => x.DropId == momentId 
                 && x.AlbumId == momentId
                 && x.Album.UserId == userId);

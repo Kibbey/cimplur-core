@@ -15,6 +15,29 @@ namespace Domain.Repository
 {
     public class DropsService : BaseService
     {
+        private NotificationService notificationService;
+        private SendEmailService sendEmailService;
+        private MovieService movieService;
+        private ImageService imageService;
+        private GroupService groupService;
+        private UserService userService;
+
+
+        public DropsService(
+            SendEmailService sendEmailService,
+            NotificationService notificationService,
+            MovieService movieService,
+            GroupService groupService,
+            ImageService imageService,
+            UserService userService
+            ) {
+            this.sendEmailService = sendEmailService;
+            this.notificationService = notificationService;
+            this.movieService = movieService;
+            this.groupService = groupService;
+            this.imageService = imageService;
+            this.userService = userService;
+        }
 
         public async Task<Tuple<int, bool>> Add(DropModel model, 
             List<long> selectedNetworkIds, 
@@ -69,9 +92,8 @@ namespace Domain.Repository
             if (selectedNetworkIds?.Any() ?? false)
             {
                 Task.Run(async () => {
-                    using (var notificationService = new NotificationService()) {
-                        await notificationService.AddNotificationDropAdded(userId, selectedNetworkIds.ToHashSet(), drop.DropId).ConfigureAwait(false);
-                    }
+                    await notificationService.AddNotificationDropAdded(userId, selectedNetworkIds.ToHashSet(), drop.DropId).ConfigureAwait(false);
+                    
                 });
             }
             EventService.EmitEvent(EventService.AddDrop, userId);
@@ -123,7 +145,6 @@ namespace Domain.Repository
                 if (imagesToRemove.Any())
                 {
                     Context.ImageDrops.RemoveRange(imagesToRemove);
-                    var imageService = new ImageService();
                     foreach (var image in imagesToRemove) {
                         await imageService.Delete(drop.DropId, image.ImageDropId.ToString(), userId);
                     }
@@ -135,7 +156,6 @@ namespace Domain.Repository
                 if (moviesToRemove.Any())
                 {
                     Context.MovieDrops.RemoveRange(moviesToRemove);
-                    var movieService = new MovieService();
                     List<Task> tasks = new List<Task>();
                     foreach (var movie in moviesToRemove) {
                          await movieService.Delete(drop.DropId, movie.MovieDropId.ToString(), userId);
@@ -152,12 +172,11 @@ namespace Domain.Repository
         {
             if (!CanView(currentUserId, dropId))
             {
-                var notificationService = new NotificationService();
                 await notificationService.RemoveNotification(currentUserId, dropId);
                 throw new NotFoundException("Ooops, this memory has been moved or removed.");
             }
             var drop = Context.Drops.Where(x => x.DropId == dropId);
-            var tagIds = new GroupService().AllNetworkModels(currentUserId).Select(s => s.TagId).ToList();
+            var tagIds = groupService.AllNetworkModels(currentUserId).Select(s => s.TagId).ToList();
             var dropModel = await MapDrops(drop, 1, currentUserId, 0, tagIds, true);
             return dropModel.Single();
         }
@@ -168,7 +187,7 @@ namespace Domain.Repository
                 .Where(x => x.TargetUserId == currentUserId && x.SharedDropNotificationId == notificationId).SingleOrDefault();
             if (!notification?.DropId.HasValue ?? true) throw new NotFoundException();
             int dropId = notification.DropId.Value;
-            new NotificationService().ViewNotification(currentUserId, dropId);
+            notificationService.ViewNotification(currentUserId, dropId);
             return await Drop(currentUserId, dropId);
         }
 
@@ -219,36 +238,34 @@ namespace Domain.Repository
             }
             var model = new DropViewModel();
             var drops = GetAllDrops(currentUserId);
-            using (var groupsService = new GroupService())
+            if (albumIds.Any())
             {
-                if (albumIds.Any())
-                {
-                    drops = FilterNetwork(albumIds, drops, currentUserId);
-                }
-                else
-                {
-                    // filter only on people and me
-                    // if we skip this we get everyones
-                    drops = FilterPeople(people, currentUserId, drops, me);
-                }
-
-                if (dayOfYear.HasValue)
-                {
-                    // if we use this filter we have to be chronological
-                    chronological = true;
-                    int window = 7;
-                    dayOfYear += 4;
-                    var maxDay = dayOfYear.Value + window;
-                    var minDay = dayOfYear.Value - window;
-                    drops = drops.Where(x => x.DayOfYear > minDay && x.DayOfYear < maxDay);
-                }
-                var tagIds = groupsService.AllNetworkModels(currentUserId).Select(s => s.TagId).ToList();
-                if (chronological) {
-                    var greatestDate = new DateTime(year + 1, 1, 1);
-                    drops = drops.Where(x => x.Date < greatestDate);
-                }
-                model.Drops = await MapDrops(drops, take, currentUserId, skip, tagIds, chronological, ascending);
+                drops = FilterNetwork(albumIds, drops, currentUserId);
             }
+            else
+            {
+                // filter only on people and me
+                // if we skip this we get everyones
+                drops = FilterPeople(people, currentUserId, drops, me);
+            }
+
+            if (dayOfYear.HasValue)
+            {
+                // if we use this filter we have to be chronological
+                chronological = true;
+                int window = 7;
+                dayOfYear += 4;
+                var maxDay = dayOfYear.Value + window;
+                var minDay = dayOfYear.Value - window;
+                drops = drops.Where(x => x.DayOfYear > minDay && x.DayOfYear < maxDay);
+            }
+            var tagIds = this.groupService.AllNetworkModels(currentUserId).Select(s => s.TagId).ToList();
+            if (chronological) {
+                var greatestDate = new DateTime(year + 1, 1, 1);
+                drops = drops.Where(x => x.Date < greatestDate);
+            }
+            model.Drops = await MapDrops(drops, take, currentUserId, skip, tagIds, chronological, ascending);
+            
 
             // TODO - remove tags that are not shared with you...so you don't get jealous
             // if we have drops update skip.  If not leave it where it was 
@@ -284,12 +301,11 @@ namespace Domain.Repository
 
         private async Task<List<DropModel>> MapDrops(IQueryable<Drop> drops, int take, int currentUserId, int skip, List<long> tagIds, bool chronological, bool ascending = false)
         {
-            using (var userService = new UserService()) {
-                var user = await userService.GetProfile(currentUserId).ConfigureAwait(false);
-                if (!user.PremiumMember) {
-                    throw new NotAuthorizedException("Buy a premium plan");
-                }
+            var user = await userService.GetProfile(currentUserId).ConfigureAwait(false);
+            if (!user.PremiumMember) {
+                throw new NotAuthorizedException("Buy a premium plan");
             }
+            
             //IIncludableQueryable<Drop, Timeline> dropInclude = drops
             IQueryable<Drop> dropInclude = drops
                 .Include(i => i.Images)
@@ -501,25 +517,20 @@ namespace Domain.Repository
 
             Context.Drops.Remove(drop);
 
-            using (ImageService imageService = new ImageService())
+            foreach (var image in images)
             {
-                foreach (var image in images)
-                {
-                    RemoveImageId(image.ImageDropId.ToString());
-                    await imageService.Delete(image.DropId, image.ImageDropId.ToString(), userId);
-                }
-
+                RemoveImageId(image.ImageDropId.ToString());
+                await imageService.Delete(image.DropId, image.ImageDropId.ToString(), userId);
             }
 
-            using (MovieService movieService = new MovieService())
-            {
-                foreach (var movie in movies)
-                {
-                    RemoveMovieId(movie.MovieDropId.ToString());
-                    await movieService.Delete(movie.DropId, movie.MovieDropId.ToString(), userId);
-                }
 
+            foreach (var movie in movies)
+            {
+                RemoveMovieId(movie.MovieDropId.ToString());
+                await movieService.Delete(movie.DropId, movie.MovieDropId.ToString(), userId);
             }
+
+
 
             await Context.SaveChangesAsync().ConfigureAwait(false);
         }
@@ -600,11 +611,11 @@ namespace Domain.Repository
                         Kind = KindOfComments.Thank,
                     };
                     drop.Comments.Add(commentModel);
-                    Dictionary<int, string> lookupCommentor = await new UserService().GetInverseNameDictionary(userId, new List<int> { drop.UserId });
+                    Dictionary<int, string> lookupCommentor = await userService.GetInverseNameDictionary(userId, new List<int> { drop.UserId });
                     if (lookupCommentor.ContainsKey(drop.UserId))
                     {
                         Task.Run(() =>
-                            SendEmailService.SendAsync(drop.CreatedBy.Email, EmailTypes.ThankEmail, new { User = lookupCommentor[drop.UserId], DropId = dropId.ToString() })
+                            this.sendEmailService.SendAsync(drop.CreatedBy.Email, EmailTypes.ThankEmail, new { User = lookupCommentor[drop.UserId], DropId = dropId.ToString() })
                         );
                     }
                 } else {
@@ -648,7 +659,7 @@ namespace Domain.Repository
                     var commenterIds = commenters.Select(x => x.UserId).ToList();
                     commenterIds.Add(drop.UserId);
                     commenterIds = commenterIds.Distinct().ToList();
-                    Dictionary<int, string> lookupCommentor = await new UserService().GetInverseNameDictionary(userId, commenterIds);
+                    Dictionary<int, string> lookupCommentor = await userService.GetInverseNameDictionary(userId, commenterIds);
                     var personWhoCommented = await Context.UserProfiles.SingleAsync(x => x.UserId.Equals(userId));
                     var commentorName = personWhoCommented.Name;
                     if (drop.UserId != userId)
@@ -656,14 +667,13 @@ namespace Domain.Repository
                         commenters.Add(drop.CreatedBy);
                     }
                     commenters = commenters.Distinct().ToList();
-                    var notificationService = new NotificationService();
                     foreach (var commenter in commenters)
                     {
                         var sendEmail = await notificationService.AddNotificationGeneric(userId, commenter.UserId, dropId, NotificationType.Comment);
                         string name = lookupCommentor.ContainsKey(commenter.UserId) ? lookupCommentor[commenter.UserId] : commentorName;
                         if (sendEmail) {
                             Task.Run(() =>
-                                SendEmailService.SendAsync(commenter.Email, EmailTypes.CommentEmail, new { User = name, DropId = dropId.ToString() })
+                                this.sendEmailService.SendAsync(commenter.Email, EmailTypes.CommentEmail, new { User = name, DropId = dropId.ToString() })
                             );
                         }
                     }
@@ -761,18 +771,15 @@ namespace Domain.Repository
                 if (canRemove)
                 {
                     var tasks = new List<Task>();
-                    using (var imageService = new ImageService()) {
-                        foreach (var image in comment.Images) {
-                            tasks.Add(imageService.Delete(comment.DropId, image.ImageDropId.ToString(), userId));
-                        }
+                    foreach (var image in comment.Images) {
+                        tasks.Add(imageService.Delete(comment.DropId, image.ImageDropId.ToString(), userId));
                     }
-                    using (var movieService = new MovieService())
+                    
+                    foreach (var image in comment.Images)
                     {
-                        foreach (var image in comment.Images)
-                        {
-                            tasks.Add(movieService.Delete(comment.DropId, image.ImageDropId.ToString(), userId));
-                        }
+                        tasks.Add(movieService.Delete(comment.DropId, image.ImageDropId.ToString(), userId));
                     }
+                    
                     await Task.WhenAll(tasks);
                     Context.ImageDrops.RemoveRange(comment.Images);
                     Context.MovieDrops.RemoveRange(comment.Movies);

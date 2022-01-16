@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Domain.Models;
 using Memento.Libs;
+using Domain.Repository;
 
 namespace Memento.Web.Controllers
 {
@@ -10,19 +11,23 @@ namespace Memento.Web.Controllers
     [Route("api/comments")]
     public class CommentController : BaseApiController
     {
+        private DropsService dropService;
+        public CommentController(DropsService dropsService) {
+            this.dropService = dropsService;
+        }
 
         [HttpGet]
         [Route("{dropId}")]
         public async Task<IActionResult> Get(int dropId)
         {
-            return Ok(await DropsService.GetComments(dropId, CurrentUserId));
+            return Ok(await dropService.GetComments(dropId, CurrentUserId));
         }
 
         [HttpPost]
         [Route("{dropId}/thanks")]
         public async Task<IActionResult> Thanks(int dropId)
         {
-            var comment = await DropsService.Thank(CurrentUserId, dropId);
+            var comment = await dropService.Thank(CurrentUserId, dropId);
             return Ok(comment);
         }
 
@@ -30,7 +35,7 @@ namespace Memento.Web.Controllers
         [Route("")]
         public async Task<ActionResult<CommentModel>> Add(CommentRequestModel commentRequestModel)
         {
-            var comment = await DropsService.AddComment(commentRequestModel.Comment, CurrentUserId, commentRequestModel.DropId);
+            var comment = await dropService.AddComment(commentRequestModel.Comment, CurrentUserId, commentRequestModel.DropId);
             if (comment == null) {
                 return NotFound();
             }
@@ -41,7 +46,7 @@ namespace Memento.Web.Controllers
         [Route("{commentId}")]
         public async Task<IActionResult> Update(CommentRequestModel commentRequestModel, int commentId)
         {
-            var result = DropsService.UpdateComment(commentRequestModel.Comment, commentId, CurrentUserId);
+            var result = dropService.UpdateComment(commentRequestModel.Comment, commentId, CurrentUserId);
             return Ok(result);
         }
 
@@ -49,7 +54,7 @@ namespace Memento.Web.Controllers
         [Route("{commentId}")]
         public async Task<IActionResult> Remove(int commentId)
         {
-            await DropsService.RemoveComment(commentId, CurrentUserId);
+            await dropService.RemoveComment(commentId, CurrentUserId);
             return Ok();
         }
     }

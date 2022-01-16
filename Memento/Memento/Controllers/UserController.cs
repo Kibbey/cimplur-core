@@ -16,9 +16,27 @@ namespace Memento.Web.Controllers
     [Route("api/users")]
     public class UserController : BaseApiController
     {
-        private UserWebToken _userWebToken;
-        public UserController(UserWebToken userWebToken) {
-            _userWebToken = userWebToken;
+        private UserWebToken userWebToken;
+        private SendEmailService sendEmailService;
+        private UserService userService;
+        private PlanService planService;
+        private GroupService groupService;
+        private DropsService dropService;
+        private SharingService sharingService;
+        public UserController(UserWebToken userWebToken, 
+            SendEmailService sendEmailService,
+            UserService userService,
+            PlanService planService,
+            GroupService groupService,
+            DropsService dropsService,
+            SharingService sharingService) {
+            this.userWebToken = userWebToken;
+            this.sendEmailService = sendEmailService;
+            this.userService = userService;
+            this.planService = planService;
+            this.groupService = groupService;
+            this.dropService = dropsService;
+            this.sharingService = sharingService;
         }
 
         [CustomAuthorization]
@@ -26,7 +44,7 @@ namespace Memento.Web.Controllers
         [Route("")]
         public async Task<IActionResult> Get()
         {
-            return Ok(await UserService.GetUser(CurrentUserId));
+            return Ok(await userService.GetUser(CurrentUserId));
         }
 
         [CustomAuthorization]
@@ -34,7 +52,7 @@ namespace Memento.Web.Controllers
         [Route("Profile")]
         public async Task<IActionResult> GetProfile()
         {
-            return Ok(await UserService.GetProfile(CurrentUserId));
+            return Ok(await userService.GetProfile(CurrentUserId));
         }
 
         [CustomAuthorization]
@@ -42,7 +60,7 @@ namespace Memento.Web.Controllers
         [Route("")]
         public async Task<IActionResult> ChangeName(NameRequest nameModel)
         {
-            return Ok(await UserService.ChangeName(CurrentUserId, nameModel.Name));
+            return Ok(await userService.ChangeName(CurrentUserId, nameModel.Name));
         }
 
         [CustomAuthorization]
@@ -50,7 +68,7 @@ namespace Memento.Web.Controllers
         [Route("{privateMode}/private")]
         public async Task<IActionResult> ChangePrivateMode(bool privateMode)
         {
-            return Ok(await UserService.UpdatePrivateMode(CurrentUserId, privateMode));
+            return Ok(await userService.UpdatePrivateMode(CurrentUserId, privateMode));
         }
 
         [HttpPost]
@@ -59,9 +77,9 @@ namespace Memento.Web.Controllers
         {
             if (!string.IsNullOrWhiteSpace(model.Email) && IsValidEmail(model.Email))
             {
-                var token = await UserService.CreateLinkToken(model.Email);
+                var token = await userService.CreateLinkToken(model.Email);
                 if (token.Success) {
-                    await SendEmailService.SendAsync(model.Email, EmailTypes.Login, new { token.Token, token.Name });
+                    await sendEmailService.SendAsync(model.Email, EmailTypes.Login, new { token.Token, token.Name });
                 }
                 return Ok(new { Message = "Please check your email for your log in link. If you do not see it check your Spam folder." });
             }
@@ -75,10 +93,10 @@ namespace Memento.Web.Controllers
         public async Task<IActionResult> Login(Models.TokenModel model)
         {
             if (!string.IsNullOrWhiteSpace(model.Token)) {
-                var userId = await UserService.ValidateToken(model.Token);
+                var userId = await userService.ValidateToken(model.Token);
                 if (userId.HasValue) {
                     try {
-                        var token = _userWebToken.generateJwtToken(userId.Value);
+                        var token = userWebToken.generateJwtToken(userId.Value);
                         CookieHelper.SetAuthToken(token, HttpContext);
                         return Ok();
                     } catch (Exception e) {
@@ -97,11 +115,11 @@ namespace Memento.Web.Controllers
         {
             if (!string.IsNullOrWhiteSpace(model.Token))
             {
-                var userId = await UserService.ValidateToken(model.Token);
+                var userId = await userService.ValidateToken(model.Token);
                 if (userId.HasValue && CurrentUserId != userId)
                     try
                     {
-                        var token = _userWebToken.generateJwtToken(userId.Value);
+                        var token = userWebToken.generateJwtToken(userId.Value);
                         CookieHelper.SetAuthToken(token, HttpContext);
                         return Ok();
                     }
@@ -178,7 +196,7 @@ namespace Memento.Web.Controllers
                 return BadRequest("Please enter a valid email.");
             }
 
-            if (UserService.CheckEmail(model.Email))
+            if (userService.CheckEmail(model.Email))
             {
                 return BadRequest("Email already exists. Please log into your existing account.");
             }
@@ -196,11 +214,11 @@ namespace Memento.Web.Controllers
             var password = Guid.NewGuid().ToString();
             var userName = model.Email;
             var reasons = Libs.CookieHelper.GetCookie<ReasonsModel>(reasonsCookie, HttpContext);
-            int userId = await UserService.AddUser(model.Email, userName, model.Token, model.AcceptTerms, model.Name, reasons?.Reasons);
-            var token = _userWebToken.generateJwtToken(userId);
+            int userId = await userService.AddUser(model.Email, userName, model.Token, model.AcceptTerms, model.Name, reasons?.Reasons);
+            var token = userWebToken.generateJwtToken(userId);
             CookieHelper.SetAuthToken(token, HttpContext);
-            GroupsService.AddHelloWorldNetworks(userId);
-            await DropsService.AddHelloWorldDrop(userId);
+            groupService.AddHelloWorldNetworks(userId);
+            await dropService.AddHelloWorldDrop(userId);
             if (string.IsNullOrWhiteSpace(model.ReturnUrl))
             {
                 model.ReturnUrl = "/#/";
@@ -208,11 +226,11 @@ namespace Memento.Web.Controllers
 
             try
             {
-                var Token = await UserService.CreateLinkToken(model.Email);
+                var Token = await userService.CreateLinkToken(model.Email);
                 Task.Run(() =>
                 {
-                    SendEmailService.SendAsync(Constants.Email, EmailTemplates.EmailTypes.SignUp, new { model.Name });
-                    SendEmailService.SendAsync(model.Email, EmailTemplates.EmailTypes.Welcome, new { model.Name, Token.Token });
+                    sendEmailService.SendAsync(Constants.Email, EmailTemplates.EmailTypes.SignUp, new { model.Name });
+                    sendEmailService.SendAsync(model.Email, EmailTemplates.EmailTypes.Welcome, new { model.Name, Token.Token });
                 });
             }
             catch (Exception e)
@@ -238,14 +256,14 @@ namespace Memento.Web.Controllers
         [Route("plans")]
         public async Task<IActionResult> GetAvailablePlanCount()
         {
-            return Ok(new { Count = await PlanService.GetAvaliableFamilyPlanCount(CurrentUserId) });
+            return Ok(new { Count = await planService.GetAvaliableFamilyPlanCount(CurrentUserId) });
         }
 
         [HttpGet]
         [Route("shareRequest/{token}")]
         public async Task<IActionResult> ShareRequest(string token)
         {
-            var requestor = SharingService.GetSharingRequest(token);
+            var requestor = sharingService.GetSharingRequest(token);
             if (requestor != null)
             {
                 if (!requestor.TargetUserId.HasValue || CurrentUserId != requestor.TargetUserId.Value)
@@ -265,7 +283,7 @@ namespace Memento.Web.Controllers
         {
             try
             {
-                return Ok(await SharingService.ConfirmationSharingRequest(token, CurrentUserId, string.Empty));
+                return Ok(await sharingService.ConfirmationSharingRequest(token, CurrentUserId, string.Empty));
             }
             catch (NotFoundException ex)
             {
@@ -278,7 +296,7 @@ namespace Memento.Web.Controllers
         [Route("seed")]
         public async Task<IActionResult> ShareRequestSeed()
         {
-            await SharingService.ProcessSharing();
+            await sharingService.ProcessSharing();
             return Ok("success");
         }
 
@@ -287,7 +305,7 @@ namespace Memento.Web.Controllers
         [Route("relationships")]
         public async Task<IActionResult> GetRelationships()
         {
-            return Ok(await UserService.GetRelationships(CurrentUserId));
+            return Ok(await userService.GetRelationships(CurrentUserId));
         }
 
         [CustomAuthorization]
@@ -295,17 +313,17 @@ namespace Memento.Web.Controllers
         [Route("relationships")]
         public async Task<IActionResult> SetRelationships(SelectedIdModel selectedModel)
         {
-            return Ok(await UserService.UpdateRelationships(selectedModel.Ids, CurrentUserId));
+            return Ok(await userService.UpdateRelationships(selectedModel.Ids, CurrentUserId));
         }
 
 
         [HttpPost]
         [Route("giveFeedback")]
         public async Task<IActionResult> GiveFeedback(Models.TokenModel token) {
-            string Name = await UserService.GiveFeedbackReceived(token.Token);
+            string Name = await userService.GiveFeedbackReceived(token.Token);
             try
             {
-                await SendEmailService.SendAsync(Constants.Email, EmailTemplates.EmailTypes.Feedback, new { Name });
+                await sendEmailService.SendAsync(Constants.Email, EmailTemplates.EmailTypes.Feedback, new { Name });
             }
             catch (Exception e)
             {
@@ -320,7 +338,7 @@ namespace Memento.Web.Controllers
         [Route("{id}/groups")]
         public async Task<IActionResult> UpdateSharedTags(int id, LongCollectionModel model)
         {
-            return Ok(await GroupsService.UpdateViewerNetworks(CurrentUserId, id, model.Ids));
+            return Ok(await groupService.UpdateViewerNetworks(CurrentUserId, id, model.Ids));
         }
 
         private void LogOffUser()

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Memento.Libs;
+using Domain.Repository;
 
 namespace Memento.Web.Controllers
 {
@@ -11,18 +12,29 @@ namespace Memento.Web.Controllers
     [Route("api/connections")]
     public class ConnectionController : BaseApiController
     {
+        private SharingService sharingService;
+        private UserService userService;
+        private GroupService groupService;
+        public ConnectionController(
+            SharingService sharingService,
+            UserService userService,
+            GroupService groupService) {
+            this.sharingService = sharingService;
+            this.userService = userService;
+            this.groupService = groupService;
+        }
         [HttpGet]
         [Route("")]
         public async Task<IActionResult> Connections() 
         {
-            return Ok(SharingService.GetConnections(CurrentUserId));
+            return Ok(sharingService.GetConnections(CurrentUserId));
         }
 
         [HttpGet]
         [Route("requests")]
         public async Task<IActionResult> ConnectionRequests()
         {
-            return Ok(SharingService.GetConnectionRequests(CurrentUserId));
+            return Ok(sharingService.GetConnectionRequests(CurrentUserId));
         }
 
         [HttpPost]
@@ -55,7 +67,7 @@ namespace Memento.Web.Controllers
                     PromptId = model.PromptId,
                     TimelineId = model.TimelineId
                 };
-                var result = await SharingService.RequestConnection(CurrentUserId, request);
+                var result = await sharingService.RequestConnection(CurrentUserId, request);
                 return Ok(new { message = result.Message, isValid = result.Success});
             }
             return Ok(new { message, isValid, key });
@@ -65,21 +77,21 @@ namespace Memento.Web.Controllers
         [Route("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            SharingService.RemoveConnection(CurrentUserId, id);
+            sharingService.RemoveConnection(CurrentUserId, id);
             return Ok();
         }
 
         [HttpGet]
         [Route("inviations")]
         public async Task<IActionResult> OutstandingInviations() {
-            return Ok(await SharingService.GetExistingRequests(CurrentUserId, 0, 0));
+            return Ok(await sharingService.GetExistingRequests(CurrentUserId, 0, 0));
         }
 
         [HttpPost]
         [Route("requests/{id}/remind")]
         public async Task<IActionResult> Remind(int id)
         {
-            await SharingService.RequestReminder(CurrentUserId, id);
+            await sharingService.RequestReminder(CurrentUserId, id);
             return Ok();
         }
 
@@ -87,7 +99,7 @@ namespace Memento.Web.Controllers
         [HttpDelete]
         [Route("requests/{id}")]
         public async Task<IActionResult> CancelOutstandingInvitation(int id) {
-            await SharingService.CancelRequest(CurrentUserId, id);
+            await sharingService.CancelRequest(CurrentUserId, id);
             return Ok();
         }
 
@@ -95,7 +107,7 @@ namespace Memento.Web.Controllers
         [Route("{id}/suggestions")]
         public async Task<IActionResult> AddSuggestion(int id, LongCollectionModel model)
         {
-            var result = await SharingService.RequestSuggestedConnection(CurrentUserId, id, model.Ids);
+            var result = await sharingService.RequestSuggestedConnection(CurrentUserId, id, model.Ids);
             return Ok(new { message = result.Message, isValid = result.Success });
         }
 
@@ -103,7 +115,7 @@ namespace Memento.Web.Controllers
         [Route("{id}/suggestions")]
         public async Task<IActionResult> IgnoreSuggestion(int id)
         {
-            await SharingService.Ignore(CurrentUserId, id);
+            await sharingService.Ignore(CurrentUserId, id);
             return Ok();
         }
 
@@ -132,7 +144,7 @@ namespace Memento.Web.Controllers
         [Route("{id}/notifications")]
         public async Task<IActionResult> UpdateEmailNotification(int id)
         {
-            UserService.EnableEmailNotificationsOfPosts(CurrentUserId, id);
+            userService.EnableEmailNotificationsOfPosts(CurrentUserId, id);
             return Ok();
         }
 
@@ -149,14 +161,14 @@ namespace Memento.Web.Controllers
         [Route("confirm")]
         public async Task<IActionResult> ConfirmConnection(NameRequest model) 
         {
-            return Ok(await SharingService.ConfirmationSharingRequest(model.Token, CurrentUserId, model.Name));
+            return Ok(await sharingService.ConfirmationSharingRequest(model.Token, CurrentUserId, model.Name));
         }
 
         [HttpDelete]
         [Route("invitations/{token}/ignore")]
         public async Task<IActionResult> IgnoreConnection(string token)
         {
-            await SharingService.IgnoreRequest(token, CurrentUserId);
+            await sharingService.IgnoreRequest(token, CurrentUserId);
             return Ok();
         }
 
@@ -164,21 +176,21 @@ namespace Memento.Web.Controllers
         [Route("{id}/name")]
         public async Task<IActionResult> ChangeName(int id, NameRequest model)
         {
-            string name = await SharingService.UpdateName(CurrentUserId, id, model.Name);
+            string name = await sharingService.UpdateName(CurrentUserId, id, model.Name);
             return Ok(new { Name = name });
         }
 
         [HttpGet]
         [Route("suggestions")]
         public async Task<IActionResult> Suggestions() {
-            return Ok(await SharingService.GetSuggestions(CurrentUserId));
+            return Ok(await sharingService.GetSuggestions(CurrentUserId));
         }
 
         [HttpGet]
         [Route("networks/{id}")]
         public async Task<IActionResult> Networks(int id)
         {
-            var viewerTags = await GroupsService.GetViewerNetworksModels(CurrentUserId, id);
+            var viewerTags = await groupService.GetViewerNetworksModels(CurrentUserId, id);
             return Ok(viewerTags);
         }
     }
