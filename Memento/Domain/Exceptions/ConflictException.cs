@@ -2,10 +2,14 @@
 
 namespace Domain.Exceptions
 {
-    public class ConflictException : Exception
+    public class ConflictException : BaseException
     {
-        public ConflictException() : base() { }
+        public ConflictException() : base() {
+            this.Status = 409;
+        }
 
-        public ConflictException(string message) : base(message) { }
+        public ConflictException(string message) : base(message) {
+            this.Status = 409;
+        }
     }
 }

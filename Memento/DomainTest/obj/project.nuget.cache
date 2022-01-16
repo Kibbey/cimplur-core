@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "a6yrWEwg+2OdGUmrpTd8loYLdZDlQXR7dXo8uTlTomBmUvZDi0mSUip7Ye2X1UBZzFH441s1X4LipK1k8Vq/fQ==",
+  "dgSpecHash": "eS+jKh0NxtnCxPRbg1ph/B9xfoimE+hgLIijqnN0eVtZ979C0AIKvRsFAffyNzx83HdukQZt1X0BfO+zX1ihHA==",
   "success": true,
   "projectFilePath": "C:\\Users\\kibbe\\repo\\cimplur-core\\Memento\\DomainTest\\DomainTest.csproj",
   "expectedPackageFiles": [
@@ -15,6 +15,8 @@
     "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.aspnet.webapi.client\\5.2.7\\microsoft.aspnet.webapi.client.5.2.7.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.aspnet.webapi.core\\5.2.7\\microsoft.aspnet.webapi.core.5.2.7.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.aspnetcore.http.features\\5.0.13\\microsoft.aspnetcore.http.features.5.0.13.nupkg.sha512",
+    "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.aspnetcore.jsonpatch\\5.0.13\\microsoft.aspnetcore.jsonpatch.5.0.13.nupkg.sha512",
+    "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.aspnetcore.mvc.newtonsoftjson\\5.0.13\\microsoft.aspnetcore.mvc.newtonsoftjson.5.0.13.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.aspnetcore.razor.language\\3.1.0\\microsoft.aspnetcore.razor.language.3.1.0.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.codeanalysis.analyzers\\3.0.0\\microsoft.codeanalysis.analyzers.3.0.0.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\microsoft.codeanalysis.common\\3.6.0\\microsoft.codeanalysis.common.3.6.0.nupkg.sha512",
@@ -63,7 +65,7 @@
     "C:\\Users\\kibbe\\.nuget\\packages\\mstest.testframework\\2.2.3\\mstest.testframework.2.2.3.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\netstandard.library\\1.6.1\\netstandard.library.1.6.1.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\newtonsoft.json\\12.0.3\\newtonsoft.json.12.0.3.nupkg.sha512",
-    "C:\\Users\\kibbe\\.nuget\\packages\\newtonsoft.json.bson\\1.0.1\\newtonsoft.json.bson.1.0.1.nupkg.sha512",
+    "C:\\Users\\kibbe\\.nuget\\packages\\newtonsoft.json.bson\\1.0.2\\newtonsoft.json.bson.1.0.2.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\nuget.frameworks\\5.0.0\\nuget.frameworks.5.0.0.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\postmark\\4.5.2\\postmark.4.5.2.nupkg.sha512",
     "C:\\Users\\kibbe\\.nuget\\packages\\razorengine.netcore\\3.1.0\\razorengine.netcore.3.1.0.nupkg.sha512",

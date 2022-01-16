@@ -7499,6 +7499,7 @@
       "Microsoft.Extensions.Configuration >= 5.0.0",
       "Microsoft.Extensions.Configuration.FileExtensions >= 5.0.0",
       "Microsoft.Extensions.Configuration.Json >= 5.0.0",
+      "Newtonsoft.Json >= 12.0.3",
       "Postmark >= 4.5.2",
       "RazorEngine.NetCore >= 3.1.0",
       "Stripe.net >= 39.84.0",
@@ -7605,6 +7606,10 @@
           "Microsoft.Extensions.Configuration.Json": {
             "target": "Package",
             "version": "[5.0.0, )"
+          },
+          "Newtonsoft.Json": {
+            "target": "Package",
+            "version": "[12.0.3, )"
           },
           "Postmark": {
             "target": "Package",

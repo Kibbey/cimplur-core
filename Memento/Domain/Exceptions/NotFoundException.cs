@@ -2,10 +2,14 @@
 
 namespace Domain.Exceptions
 {
-    public class NotFoundException : Exception
+    public class NotFoundException : BaseException
     {
-        public NotFoundException() : base() { }
+        public NotFoundException() : base() {
+            this.Status = 404;
+        }
 
-        public NotFoundException(string message) : base(message) {}
+        public NotFoundException(string message) : base(message) {
+            this.Status = 404;
+        }
     }
 }
