@@ -37,18 +37,6 @@ namespace Domain.Repository
             this.groupService = groupService;
         }
 
-        public List<ConnectionModel> GetConnections(int userId)
-        {
-            return Context.UserUsers.Where(x => x.OwnerUserId == userId).Select(s =>
-                    new ConnectionModel
-                    {
-                        EmailNotifications = s.SendNotificationEmail,
-                        Name = s.ReaderName ?? s.ReaderUser.Name,
-                        Id = s.ReaderUserId
-                    }
-                ).ToList().OrderBy(s => s.Name).ToList();
-        }
-
         public List<ConnectionModel> GetConnectionRequests(int userId) {
             var currentUser = Context.UserProfiles.Single(x => x.UserId == userId);
             var requests = Context.ShareRequests.Where(x => (x.TargetsUserId == userId || x.TargetsEmail.Equals(currentUser.Email))

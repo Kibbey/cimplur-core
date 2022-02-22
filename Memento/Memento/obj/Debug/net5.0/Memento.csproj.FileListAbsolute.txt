@@ -119,3 +119,4 @@ C:\Users\kibbe\repo\cimplur-core\Memento\Memento\obj\Debug\net5.0\Memento.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\Memento\obj\Debug\net5.0\ref\Memento.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\Memento\obj\Debug\net5.0\Memento.pdb
 C:\Users\kibbe\repo\cimplur-core\Memento\Memento\obj\Debug\net5.0\Memento.genruntimeconfig.cache
+C:\Users\kibbe\repo\cimplur-core\Memento\Memento\bin\Debug\net5.0\SixLabors.ImageSharp.dll

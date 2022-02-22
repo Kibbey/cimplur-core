@@ -6,8 +6,6 @@ using Amazon.ElasticTranscoder.Model;
 using System;
 using System.IO;
 using System.Linq;
-using System.Web;
-using Domain.Utilities;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Amazon.SQS;
@@ -17,24 +15,25 @@ using Microsoft.EntityFrameworkCore;
 using log4net;
 using Domain.Exceptions;
 using Microsoft.AspNetCore.Http;
+using Domain.Entities;
 
 namespace Domain.Repository
 {
     public class MovieService : BaseService
     {
         private ILog log = LogManager.GetLogger(nameof(MovieService));
-        private DropsService dropService;
-        public MovieService(DropsService dropsService) {
-            this.dropService = dropsService;
+        private PermissionService permissionService;
+        public MovieService(PermissionService permissionService) {
+            this.permissionService = permissionService;
         }
         public async Task<bool> Add(IFormFile file, int userId, int dropId, int? commentId)
         {
             
-            if (!dropService.CanView(userId, dropId))
+            if (!permissionService.CanView(userId, dropId))
             {
                 throw new NotAuthorizedException("You do not have acces to this memory.");
             }
-            string movieId = dropService.DropMovieId(dropId, userId, commentId);
+            string movieId = this.DropMovieId(dropId, userId, commentId);
             if (movieId == null)
             {
                 return false;
@@ -60,7 +59,7 @@ namespace Domain.Repository
                     PutObjectResponse response = await s3Client.PutObjectAsync(request);
                     if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
                     {
-                        dropService.RemoveMovieId(movieId);
+                        this.RemoveMovieId(movieId);
                         return false;
                     }
 
@@ -70,7 +69,7 @@ namespace Domain.Repository
             }
             catch (Exception e)
             {
-                dropService.RemoveMovieId(movieId);
+                this.RemoveMovieId(movieId);
                 throw e;
             }
             
@@ -88,7 +87,7 @@ namespace Domain.Repository
                 {
                     int dropId = image.DropId;
                     int imageUserId = image.CommentId.HasValue ? image.Comment.UserId : image.Drop.CreatedBy.UserId;
-                    if (dropService.CanView(userId,dropId))
+                    if (permissionService.CanView(userId,dropId))
                     {
                         using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
                         {
@@ -125,7 +124,7 @@ namespace Domain.Repository
             {
                 int dropId = image.DropId;
                 int imageUserId = image.CommentId.HasValue ? image.Comment.UserId : image.Drop.CreatedBy.UserId;
-                if (dropService.CanView(userId, dropId))
+                if (permissionService.CanView(userId, dropId))
                 {
                     using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
                     {
@@ -292,6 +291,36 @@ namespace Domain.Repository
                     log.Error("Delete folder", e);
                 }
             }
+        }
+
+        public void RemoveMovieId(string imageId)
+        {
+            int id = int.Parse(imageId);
+            var movie = Context.MovieDrops.FirstOrDefault(x => x.MovieDropId == id);
+            if (movie != null)
+            {
+                Context.MovieDrops.Remove(movie);
+                Context.SaveChanges();
+            }
+        }
+
+        private string DropMovieId(int dropId, int userId, int? commentId)
+        {
+            if (!permissionService.CanView(userId, dropId))
+            {
+                throw new NotAuthorizedException("You do not have acces to this memory.");
+            }
+            var drop = Context.Drops.FirstOrDefault(x => x.DropId == dropId);
+            if (drop == null)
+            {
+                return null;
+            }
+            //grab imageId = imageId;
+            //insert next
+            var movie = new MovieDrop { CommentId = commentId };
+            drop.Movies.Add(movie);
+            Context.SaveChanges();
+            return movie.MovieDropId.ToString();
         }
 
         private static byte[] GetByteArray(Stream input)

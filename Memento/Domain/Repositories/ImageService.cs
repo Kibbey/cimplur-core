@@ -4,30 +4,55 @@ using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
 using System.IO;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.Threading.Tasks;
 using log4net;
 using ImageMagick;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
-using System.Drawing;
+using Domain.Exceptions;
+using Domain.Entities;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Metadata.Profiles.Exif;
+using ExifTag = SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag;
 
 namespace Domain.Repository
 {
     public class ImageService : BaseService
     {
         private ILog log = LogManager.GetLogger(nameof(ImageService));
-        private DropsService dropService;
+        private PermissionService permissionService;
 
-        public ImageService(DropsService dropsService) {
-            this.dropService = dropsService;
+        public ImageService(PermissionService permissionService) {
+            this.permissionService = permissionService;
+        }
+
+        public async Task<bool> Test(string path, string outPath)
+        {// Open the file automatically detecting the file type to decode it.
+         // Our image is now in an uncompressed, file format agnostic, structure in-memory as
+         // a series of pixels.
+         // You can also specify the pixel format using a type parameter (e.g. Image<Rgba32> image = Image.Load<Rgba32>("foo.jpg"))
+            using (Image image = await Image.LoadAsync(path))
+            {
+                // Resize the image in place and return it for chaining.
+                // 'x' signifies the current image processing context.
+                //image.Mutate(x => x.Resize(image.Width / 2, image.Height / 2));
+                //ReSizeImageAsync(image);
+
+                RotateImage(image);
+                var bitmap = ReSizeImage(image, 2048);
+                // The library automatically picks an encoder based on the file extension then
+                // encodes and write the data to disk.
+                // You can optionally set the encoder to choose.
+                await bitmap.SaveAsJpegAsync(outPath);
+            } // Dispose - releasing memory into a memory pool ready for the next image you wish to process.
+            return true;
         }
 
         public async Task<bool> Add(IFormFile file, int userId, int dropId, int? commentId)
         {
 
-            string imageId = dropService.DropImageId(dropId, userId, commentId);
+            string imageId = this.DropImageId(dropId, userId, commentId);
             if (imageId == null)
             {
                 return false;
@@ -36,7 +61,7 @@ namespace Domain.Repository
 
             Stream stream;
             try {
-                stream = ReSizeImage(file);
+                stream = await ReSizeImageAsync(file);
                 // Create S3 service client.             
                 using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
                 {                 // Setup request for putting an object in S3.                 
@@ -50,14 +75,14 @@ namespace Domain.Repository
                     PutObjectResponse response = await s3Client.PutObjectAsync(request);
                     if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
                     {
-                        dropService.RemoveImageId(imageId);
+                        this.RemoveImageId(imageId);
                         return false;
                     }
                 }
             }
             catch (Exception e)
             {
-                dropService.RemoveImageId(imageId);
+                this.RemoveImageId(imageId);
                 throw e;
             }
             stream.Dispose();
@@ -73,7 +98,7 @@ namespace Domain.Repository
             {
                 int dropId = image.DropId;
                 int imageUserId = image.CommentId.HasValue ? image.Comment.UserId : image.Drop.CreatedBy.UserId;
-                if (dropService.CanView(userId, dropId))
+                if (permissionService.CanView(userId, dropId))
                 {
                     using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
                     {
@@ -114,73 +139,80 @@ namespace Domain.Repository
             }
         }
 
-        private Stream ReSizeImage(IFormFile file)
+        private async Task<Stream> ReSizeImageAsync(IFormFile file)
         {
             Image image = null;
             if (file.FileName != null && file.FileName.ToLower().Contains(".heic"))
             {
-                image = ConvertToJPG(file);
+                image = await ConvertToJPG(file);
             }
             else {
-                image = Image.FromStream(file.OpenReadStream());
+                image = await Image.LoadAsync(file.OpenReadStream());
             }
             RotateImage(image);
             var bitmap = ReSizeImage(image, 2048);
             var stream = new MemoryStream();
-            bitmap.Save(stream, ImageFormat.Jpeg);
+            await bitmap.SaveAsJpegAsync(stream);
             image.Dispose();
             return stream;
         }
 
-        public Image ConvertToJPG(IFormFile file) {
+        
+        public async Task<Image> ConvertToJPG(IFormFile file) {
             //Convert HEIC/HEIF to JPF
             using (var image = new MagickImage(file.OpenReadStream()))
             {
                 image.Format = MagickFormat.Jpeg;
                 var ms = new MemoryStream();
                 image.Write(ms);
-                return Image.FromStream(ms);
+                return await Image.LoadAsync(ms);
             }
         }
 
         private Image RotateImage(Image image) {
-            
-            if (Array.IndexOf(image.PropertyIdList, 274) > -1)
+            var tags = image.Metadata.ExifProfile.Values;
+            var orientation = image.Metadata.ExifProfile.GetValue(ExifTag.Orientation);
+            if (orientation != null)
             {
-                var orientation = (int)image.GetPropertyItem(274).Value[0];
-                switch (orientation)
+                switch (orientation.Value.ToString())
                 {
-                    case 1:
+                    case "1":
                         // No rotation required.
                         break;
-                    case 2:
-                        image.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    case "2": //2
+                        image.Mutate(x => x.RotateFlip(RotateMode.None, FlipMode.Horizontal));
+                        //image.Mutate(x => x.Rotate(0f));
+                        //image.RotateFlip(RotateFlipType.RotateNoneFlipX);
                         break;
-                    case 3:
-                        image.RotateFlip(RotateFlipType.Rotate180FlipNone);
+                    case "3":
+                        image.Mutate(x => x.RotateFlip(RotateMode.Rotate180, FlipMode.None));
+                        //image.RotateFlip(RotateFlipType.Rotate180FlipNone);
                         break;
-                    case 4:
-                        image.RotateFlip(RotateFlipType.Rotate180FlipX);
+                    case "4":
+                        image.Mutate(x => x.RotateFlip(RotateMode.Rotate180,FlipMode.Horizontal));
+                        //image.RotateFlip(RotateFlipType.Rotate180FlipX);
                         break;
-                    case 5:
-                        image.RotateFlip(RotateFlipType.Rotate90FlipX);
+                    case "5":
+                        image.Mutate(x => x.RotateFlip(RotateMode.Rotate90, FlipMode.Horizontal));
+                        //image.RotateFlip(RotateFlipType.Rotate90FlipX);
                         break;
-                    case 6:
-                        image.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                    case "6":
+                        image.Mutate(x => x.RotateFlip(RotateMode.Rotate90, FlipMode.None));
+                        //image.RotateFlip(RotateFlipType.Rotate90FlipNone);
                         break;
-                    case 7:
-                        image.RotateFlip(RotateFlipType.Rotate270FlipX);
+                    case "7":
+                        image.Mutate(x => x.RotateFlip(RotateMode.Rotate270, FlipMode.Horizontal));
+                        //image.RotateFlip(RotateFlipType.Rotate270FlipX);
                         break;
-                    case 8:
-                        image.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                    case "8":
+                        image.Mutate(x => x.RotateFlip(RotateMode.Rotate270, FlipMode.None));
+                        //image.RotateFlip(RotateFlipType.Rotate270FlipNone);
                         break;
                 }
                 // This EXIF data is now invalid and should be removed.
-                image.RemovePropertyItem(274); // orientation
-                if (Array.IndexOf(image.PropertyIdList, 256) > -1)
-                    image.RemovePropertyItem(256); // width
-                if (Array.IndexOf(image.PropertyIdList, 257) > -1)
-                    image.RemovePropertyItem(257); // length
+                image.Metadata.ExifProfile.RemoveValue(ExifTag.Orientation); // 274
+                image.Metadata.ExifProfile.RemoveValue(ExifTag.ImageWidth); // 256 & 257
+                image.Metadata.ExifProfile.RemoveValue(ExifTag.ImageLength);
             }
             return image;
         }
@@ -193,20 +225,17 @@ namespace Domain.Repository
             if (width > maxWidth)
             {
                 var aspectRatio = height / width;
-                //if (height > width)
-                //{
-                //    height = 768;
-                //    width = (float)(height / aspectRatio);
-                //}
-                //else
-                //{
-                    width = maxWidth;
-                    height = (float)(aspectRatio * width);
-                //}
+                width = maxWidth;
+                height = (float)(aspectRatio * width);
             }
             if (width == image.Width) {
                 return image;
             }
+
+            image.Mutate(x => x.Resize((int)width, (int)height));
+            return image;
+            //image.SaveAsJpegAsync("");
+            /*
             var destRect = new Rectangle(0, 0, (int)width, (int)height);
             var destImage = new Bitmap((int)width, (int)height);
 
@@ -229,8 +258,8 @@ namespace Domain.Repository
             //foreach (var item in image.PropertyItems)
             //{
             //    //destImage.SetPropertyItem(item);
-            //}
-            return destImage;
+            //}*/
+            //return destImage;
         }
 
         public static string GetName(int dropId, string imageId, int userId) 
@@ -241,6 +270,38 @@ namespace Domain.Repository
             }
             else {
                 return string.Format("test/{0}/{1}/{2}", userId, dropId.ToString(), imageId);
+            }
+        }
+
+        public string DropImageId(int dropId, int userId, int? commentId)
+        {
+            if (!permissionService.CanView(userId, dropId))
+            {
+                throw new NotAuthorizedException("You do not have acces to this memory.");
+            }
+            var drop = Context.Drops.FirstOrDefault(x => x.DropId == dropId);
+            if (drop == null)
+            {
+                return null;
+            }
+            //grab imageId = imageId;
+            //insert next
+            var image = new ImageDrop { CommentId = commentId };
+            drop.Images.Add(image);
+            Context.SaveChanges();
+            return image.ImageDropId.ToString();
+        }
+
+        public void RemoveImageId(string imageId)
+        {
+            // We do NOT do a security check here - this needs done higher up the stack!
+            int id = int.Parse(imageId);
+            var image = Context.ImageDrops
+                .FirstOrDefault(x => x.ImageDropId == id);
+            if (image != null)
+            {
+                Context.ImageDrops.Remove(image);
+                Context.SaveChanges();
             }
         }
 

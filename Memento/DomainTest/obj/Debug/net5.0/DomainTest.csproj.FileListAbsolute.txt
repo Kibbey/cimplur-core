@@ -199,3 +199,4 @@ C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\obj\Debug\net5.0\DomainTest.
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\obj\Debug\net5.0\ref\DomainTest.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\obj\Debug\net5.0\DomainTest.pdb
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\obj\Debug\net5.0\DomainTest.genruntimeconfig.cache
+C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\SixLabors.ImageSharp.dll

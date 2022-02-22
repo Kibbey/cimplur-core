@@ -15,10 +15,12 @@ namespace Memento.Web.Controllers
     {
         private UserService userService;
         private UserWebToken _userWebToken;
-        public LinksController(UserWebToken userWebToken, UserService userService)
+        private TokenService tokenService;
+        public LinksController(UserWebToken userWebToken, UserService userService, TokenService tokenService)
         {
             _userWebToken = userWebToken;
             this.userService = userService;
+            this.tokenService = tokenService;
         }
 
         [HttpGet]
@@ -36,7 +38,7 @@ namespace Memento.Web.Controllers
                 var linkToken = EmailSafeLinkCreator.RetrieveLink(route);
                 if (!string.IsNullOrWhiteSpace(linkToken))
                 {
-                    var userId = await userService.ValidateToken(linkToken);
+                    var userId = await tokenService.ValidateToken(linkToken);
                     if (userId.HasValue && CurrentUserId != userId) {
                         var token = _userWebToken.generateJwtToken(userId.Value);
                         CookieHelper.SetAuthToken(token, HttpContext);

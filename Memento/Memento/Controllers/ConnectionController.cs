@@ -27,7 +27,7 @@ namespace Memento.Web.Controllers
         [Route("")]
         public async Task<IActionResult> Connections() 
         {
-            return Ok(sharingService.GetConnections(CurrentUserId));
+            return Ok(userService.GetConnections(CurrentUserId));
         }
 
         [HttpGet]

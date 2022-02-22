@@ -14,14 +14,14 @@ namespace Domain.Emails
 {
     public class SendEmailService
     {
-        private UserService userService;
-        public SendEmailService(IOptions<AppSettings> appSettings, UserService userService) {
+        private TokenService tokenService;
+        public SendEmailService(IOptions<AppSettings> appSettings, TokenService tokenService) {
             var settings = appSettings.Value;
             InProduction = settings.Production;
             EmailAddress = settings.Owner;
             EmailPW = settings.EmailCode;
             PostMarkToken = settings.EmailToken;
-            this.userService = userService;
+            this.tokenService = tokenService;
         }
 
         public async Task SendAsync(string email, EmailTypes template, object model)
@@ -78,7 +78,7 @@ namespace Domain.Emails
         };
 
         private async Task<string> CreateLinkToken(string email) {
-            var token = await userService.CreateLinkToken(email).ConfigureAwait(false);
+            var token = await tokenService.CreateLinkToken(email).ConfigureAwait(false);
             return token.Success ? token.Token : string.Empty;
         }
 

@@ -23,13 +23,15 @@ namespace Memento.Web.Controllers
         private GroupService groupService;
         private DropsService dropService;
         private SharingService sharingService;
+        private TokenService tokenService;
         public UserController(UserWebToken userWebToken, 
             SendEmailService sendEmailService,
             UserService userService,
             PlanService planService,
             GroupService groupService,
             DropsService dropsService,
-            SharingService sharingService) {
+            SharingService sharingService,
+            TokenService tokenService) {
             this.userWebToken = userWebToken;
             this.sendEmailService = sendEmailService;
             this.userService = userService;
@@ -37,6 +39,7 @@ namespace Memento.Web.Controllers
             this.groupService = groupService;
             this.dropService = dropsService;
             this.sharingService = sharingService;
+            this.tokenService = tokenService;
         }
 
         [CustomAuthorization]
@@ -77,7 +80,7 @@ namespace Memento.Web.Controllers
         {
             if (!string.IsNullOrWhiteSpace(model.Email) && IsValidEmail(model.Email))
             {
-                var token = await userService.CreateLinkToken(model.Email);
+                var token = await tokenService.CreateLinkToken(model.Email);
                 if (token.Success) {
                     await sendEmailService.SendAsync(model.Email, EmailTypes.Login, new { token.Token, token.Name });
                 }
@@ -93,7 +96,7 @@ namespace Memento.Web.Controllers
         public async Task<IActionResult> Login(Models.TokenModel model)
         {
             if (!string.IsNullOrWhiteSpace(model.Token)) {
-                var userId = await userService.ValidateToken(model.Token);
+                var userId = await tokenService.ValidateToken(model.Token);
                 if (userId.HasValue) {
                     try {
                         var token = userWebToken.generateJwtToken(userId.Value);
@@ -115,7 +118,7 @@ namespace Memento.Web.Controllers
         {
             if (!string.IsNullOrWhiteSpace(model.Token))
             {
-                var userId = await userService.ValidateToken(model.Token);
+                var userId = await tokenService.ValidateToken(model.Token);
                 if (userId.HasValue && CurrentUserId != userId)
                     try
                     {
@@ -226,7 +229,7 @@ namespace Memento.Web.Controllers
 
             try
             {
-                var Token = await userService.CreateLinkToken(model.Email);
+                var Token = await tokenService.CreateLinkToken(model.Email);
                 Task.Run(() =>
                 {
                     sendEmailService.SendAsync(Constants.Email, EmailTemplates.EmailTypes.SignUp, new { model.Name });

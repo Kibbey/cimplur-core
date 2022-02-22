@@ -261,7 +261,7 @@ namespace Domain.Repository
             var prompt = await Context.Prompts.SingleAsync(x => x.PromptId == promptId);
             var usersEmailDictionary = await Context.UserProfiles.Where(x => userIds.Contains(x.UserId))
                 .ToDictionaryAsync(k => k.UserId, v => v.Email);
-            var nameDictionary = await userService.GetInverseNameDictionary(currentUserId, userIds);
+            var nameDictionary = await dropService.GetInverseNameDictionary(currentUserId, userIds);
 
             userIds.ForEach(userId =>
                             sendEmailService.SendAsync(usersEmailDictionary[userId], EmailTypes.Question,

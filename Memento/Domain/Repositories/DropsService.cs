@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static Domain.Emails.EmailTemplates;
-using Microsoft.EntityFrameworkCore.Query;
+//using Microsoft.EntityFrameworkCore.Query;
 
 namespace Domain.Repository
 {
@@ -20,7 +20,6 @@ namespace Domain.Repository
         private MovieService movieService;
         private ImageService imageService;
         private GroupService groupService;
-        private UserService userService;
 
 
         public DropsService(
@@ -28,15 +27,13 @@ namespace Domain.Repository
             NotificationService notificationService,
             MovieService movieService,
             GroupService groupService,
-            ImageService imageService,
-            UserService userService
+            ImageService imageService
             ) {
             this.sendEmailService = sendEmailService;
             this.notificationService = notificationService;
             this.movieService = movieService;
             this.groupService = groupService;
             this.imageService = imageService;
-            this.userService = userService;
         }
 
         public async Task<Tuple<int, bool>> Add(DropModel model, 
@@ -292,19 +289,15 @@ namespace Domain.Repository
             return dropModels;
         }
 
-        public async Task<DropModel> GetOldestDropYear(int currentUserId)
-        {
-            int year = DateTime.UtcNow.Year;
-            var dropsViewModel = await GetDrops(currentUserId, new List<int>(), new List<int>(), false, true, null, year, 0, true);
-            return dropsViewModel.Drops.FirstOrDefault();
-        }
-
         private async Task<List<DropModel>> MapDrops(IQueryable<Drop> drops, int take, int currentUserId, int skip, List<long> tagIds, bool chronological, bool ascending = false)
         {
+            /*
+             * This may need to go back to a permission style call going forward.
             var user = await userService.GetProfile(currentUserId).ConfigureAwait(false);
             if (!user.PremiumMember) {
                 throw new NotAuthorizedException("Buy a premium plan");
             }
+            */
             
             //IIncludableQueryable<Drop, Timeline> dropInclude = drops
             IQueryable<Drop> dropInclude = drops
@@ -519,14 +512,14 @@ namespace Domain.Repository
 
             foreach (var image in images)
             {
-                RemoveImageId(image.ImageDropId.ToString());
+                imageService.RemoveImageId(image.ImageDropId.ToString());
                 await imageService.Delete(image.DropId, image.ImageDropId.ToString(), userId);
             }
 
 
             foreach (var movie in movies)
             {
-                RemoveMovieId(movie.MovieDropId.ToString());
+                movieService.RemoveMovieId(movie.MovieDropId.ToString());
                 await movieService.Delete(movie.DropId, movie.MovieDropId.ToString(), userId);
             }
 
@@ -535,67 +528,6 @@ namespace Domain.Repository
             await Context.SaveChangesAsync().ConfigureAwait(false);
         }
 
-        public string DropImageId(int dropId, int userId, int? commentId)
-        {
-            if (!this.CanView(userId, dropId))
-            {
-                throw new NotAuthorizedException("You do not have acces to this memory.");
-            }
-            var drop = Context.Drops.FirstOrDefault(x => x.DropId == dropId);
-            if (drop == null)
-            {
-                return null;
-            }
-            //grab imageId = imageId;
-            //insert next
-            var image = new ImageDrop { CommentId = commentId };
-            drop.Images.Add(image);
-            Context.SaveChanges();
-            return image.ImageDropId.ToString();
-        }
-
-        public string DropMovieId(int dropId, int userId, int? commentId)
-        {
-            if (!this.CanView(userId, dropId))
-            {
-                throw new NotAuthorizedException("You do not have acces to this memory.");
-            }
-            var drop = Context.Drops.FirstOrDefault(x => x.DropId == dropId);
-            if (drop == null)
-            {
-                return null;
-            }
-            //grab imageId = imageId;
-            //insert next
-            var movie = new MovieDrop { CommentId = commentId };
-            drop.Movies.Add(movie);
-            Context.SaveChanges();
-            return movie.MovieDropId.ToString();
-        }
-
-        public void RemoveImageId(string imageId)
-        {
-            // We do NOT do a security check here - this needs done higher up the stack!
-            int id = int.Parse(imageId);
-            var image = Context.ImageDrops
-                .FirstOrDefault(x => x.ImageDropId == id);
-            if (image != null)
-            {
-                Context.ImageDrops.Remove(image);
-                Context.SaveChanges();
-            }
-        }
-
-        public void RemoveMovieId(string imageId)
-        {
-            int id = int.Parse(imageId);
-            var movie = Context.MovieDrops.FirstOrDefault(x => x.MovieDropId == id);
-            if (movie != null)
-            {
-                Context.MovieDrops.Remove(movie);
-                Context.SaveChanges();
-            }
-        }
 
         public async Task<CommentModel> Thank(int userId, int dropId)
         {
@@ -611,7 +543,7 @@ namespace Domain.Repository
                         Kind = KindOfComments.Thank,
                     };
                     drop.Comments.Add(commentModel);
-                    Dictionary<int, string> lookupCommentor = await userService.GetInverseNameDictionary(userId, new List<int> { drop.UserId });
+                    Dictionary<int, string> lookupCommentor = await this.GetInverseNameDictionary(userId, new List<int> { drop.UserId });
                     if (lookupCommentor.ContainsKey(drop.UserId))
                     {
                         Task.Run(() =>
@@ -659,7 +591,7 @@ namespace Domain.Repository
                     var commenterIds = commenters.Select(x => x.UserId).ToList();
                     commenterIds.Add(drop.UserId);
                     commenterIds = commenterIds.Distinct().ToList();
-                    Dictionary<int, string> lookupCommentor = await userService.GetInverseNameDictionary(userId, commenterIds);
+                    Dictionary<int, string> lookupCommentor = await this.GetInverseNameDictionary(userId, commenterIds);
                     var personWhoCommented = await Context.UserProfiles.SingleAsync(x => x.UserId.Equals(userId));
                     var commentorName = personWhoCommented.Name;
                     if (drop.UserId != userId)
@@ -692,6 +624,20 @@ namespace Domain.Repository
 
             }
             throw new KeyNotFoundException();
+        }
+
+        /// <summary>
+        /// How others see this user
+        /// </summary>
+        /// <param name="currentUserId"></param>
+        /// <param name="others"></param>
+        /// <returns></returns>
+        public async Task<Dictionary<int, string>> GetInverseNameDictionary(int currentUserId, List<int> others)
+        {
+            return await Context.UserUsers.Include(i => i.ReaderUser)
+                       .Where(x => others.Contains(x.OwnerUserId) && x.ReaderUserId == currentUserId)
+                       .Select(s => new { Id = s.OwnerUserId, Name = s.ReaderName ?? s.ReaderUser.Name })
+                       .ToDictionaryAsync(k => k.Id, v => v.Name);
         }
 
         /// <summary>
@@ -808,13 +754,7 @@ namespace Domain.Repository
 
         private static string twoNewLine = Environment.NewLine + Environment.NewLine;
 
-        private static void UpdateUserSkip(StreamContext context, int skip, int userId)
-        {
-            var user = context.UserProfiles.Single(x => x.UserId == userId);
-            user.Skip = skip;
-            context.SaveChanges();
-        }
-
+        /*
         private List<string> _readerCurrentUserPeople { get; set; }
 
         private List<string> readerCurrentUserPeople(int currentUserId)
@@ -831,5 +771,13 @@ namespace Domain.Repository
             throw new NotImplementedException("add later");
             //return Context.UserUserTags.Where(x => x.OwnerUserId == currentUserId).Select(s => s.OwnerUser.UserName.ToLower()).ToList();
         }
+
+        private static void UpdateUserSkip(StreamContext context, int skip, int userId)
+        {
+            var user = context.UserProfiles.Single(x => x.UserId == userId);
+            user.Skip = skip;
+            context.SaveChanges();
+        }
+        */
     }
 }

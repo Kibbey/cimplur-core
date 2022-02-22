@@ -15,14 +15,15 @@ namespace Domain.Repository
     {
         private NotificationService notificationService;
         private DropsService dropService;
-        private SharingService connectionService;
+        private UserService userService;
         public TimelineService(
             NotificationService notificationSevice,
             DropsService dropsService,
-            SharingService connectionService) {
+            UserService userService
+           ) {
             this.notificationService = notificationSevice;
             this.dropService = dropsService;
-            this.connectionService = connectionService;
+            this.userService = userService;
         }
         public async Task<TimelineModel> AddTimeline(int currentUserId, string name, string description)
         {
@@ -164,7 +165,7 @@ namespace Domain.Repository
         {
             var connectedUserIds = new List<int>();
 
-            connectedUserIds = connectionService.GetConnections(currentUserId).Select(s => s.Id).ToList();
+            connectedUserIds = userService.GetConnections(currentUserId).Select(s => s.Id).ToList();
             
             connectedUserIds.Add(currentUserId);
             // we show timelines that your connections have created or are following

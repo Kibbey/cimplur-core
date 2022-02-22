@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Domain.Exceptions;
 using static Domain.Emails.EmailTemplates;
 using System.Collections.Generic;
-using System.Configuration;
 using log4net;
 using System.Text.Json;
 using Domain.Emails;
@@ -21,18 +20,21 @@ namespace Domain.Repository
         private SendEmailService sendEmailService;
         private DropsService dropService;
         private AlbumService albumService;
+        private TokenService tokenService;
 
 
         public UserService(
             NotificationService notificationService,
             SendEmailService sendEmailService,
             DropsService dropsService,
-            AlbumService albumService)
+            AlbumService albumService,
+            TokenService tokenService)
         {
             this.notificationService = notificationService;
             this.albumService = albumService;
             this.dropService = dropsService;
             this.sendEmailService = sendEmailService;
+            this.tokenService = tokenService;
         }
         public async Task<int> AddUser(string email, string userName, 
             string token, bool acceptTerms, string name, List<ReasonModel> reasons)
@@ -69,6 +71,18 @@ namespace Domain.Repository
             Context.UserProfiles.Add(user);
             await Context.SaveChangesAsync();
             return user.UserId;
+        }
+
+        public List<ConnectionModel> GetConnections(int userId)
+        {
+            return Context.UserUsers.Where(x => x.OwnerUserId == userId).Select(s =>
+                    new ConnectionModel
+                    {
+                        EmailNotifications = s.SendNotificationEmail,
+                        Name = s.ReaderName ?? s.ReaderUser.Name,
+                        Id = s.ReaderUserId
+                    }
+                ).ToList().OrderBy(s => s.Name).ToList();
         }
 
         public async Task<UserModel> ChangeName(int currentUserId, string name)
@@ -262,7 +276,7 @@ namespace Domain.Repository
 
             int year = DateTime.UtcNow.Year;
             int oldestYear = 0;
-            var oldestDrop = await dropService.GetOldestDropYear(currentUserId);
+            var oldestDrop = await this.GetOldestDropYear(currentUserId);
             if (oldestDrop != null) {
                 oldestYear = oldestDrop.Date.Year;
             }
@@ -289,6 +303,7 @@ namespace Domain.Repository
             return tagModels;
         }
 
+
         public async Task UpdateMe(int currentUserId, bool me)
         {
             var userProfile = await Context.UserProfiles.SingleAsync(x => x.UserId == currentUserId);
@@ -298,44 +313,11 @@ namespace Domain.Repository
             }
         }
 
-        public async Task<OneTimePasswordModel> CreateLinkToken(string email) {
-            var user = await Context.UserProfiles.SingleOrDefaultAsync(x => x.Email.Equals(email)).ConfigureAwait(false);
-            var result = new OneTimePasswordModel { Success = false };
-            if (user == null) return result;
-            var now = DateTime.UtcNow;
-            var token = new TokenModel { Created = now, UserId = user.UserId, UserToken = user.Token };
-            var encryptedToken = EncryptionHelper.EncryptString(linkKey, token);
-            var userToken = new OneTimePasswordModel { Success = true, Token = encryptedToken, Name = user.Name };
-            return userToken;
-        }
-
-        public async Task<int?> ValidateToken(string token)
-        {
-            try
-            {
-                var validatedToken = EncryptionHelper.DecryptString<TokenModel>(linkKey, token);
-                var expiration = DateTime.UtcNow.AddMinutes(-expirationInMinutes);
-                if (validatedToken.Created > expiration) {
-                    var user = await Context.UserProfiles.SingleOrDefaultAsync(x => x.UserId == validatedToken.UserId && x.Token == validatedToken.UserToken);
-                    // we flip the token so all tokens before this are no longer valid
-                    if (user != null) {
-                        //user.Token = CreateToken();
-                        //await Context.SaveChangesAsync();
-                        return user.UserId;
-                    }
-                }
-            }
-            catch (Exception e) {
-                logger.Error($"Login Issue - {token}", e);
-            }
-            return null;
-        }
-
         public async Task<string> GiveFeedbackReceived(string token)
         {
             try
             {
-                var validatedToken = EncryptionHelper.DecryptString<TokenModel>(linkKey, token);
+                var validatedToken = await this.tokenService.GetTokenValue(token);
                 var user = await Context.UserProfiles.SingleAsync(x => x.UserId == validatedToken.UserId);
                 user.GiveFeedback = DateTime.UtcNow;
                 await Context.SaveChangesAsync();
@@ -343,7 +325,7 @@ namespace Domain.Repository
             }
             catch (Exception e)
             {
-                logger.Error($"Welcom Issue - {token}", e);
+                logger.Error($"Welcome Issue - {token}", e);
             }
             return null;
         }
@@ -358,18 +340,6 @@ namespace Domain.Repository
                 v => v.ReaderName ?? v.ReaderUser.Name);
         }
 
-        /// <summary>
-        /// How others see this user
-        /// </summary>
-        /// <param name="currentUserId"></param>
-        /// <param name="others"></param>
-        /// <returns></returns>
-        public async Task<Dictionary<int, string>> GetInverseNameDictionary(int currentUserId, List<int> others) {
-            return await Context.UserUsers.Include(i => i.ReaderUser)
-                       .Where(x => others.Contains(x.OwnerUserId) && x.ReaderUserId == currentUserId)
-                       .Select(s => new { Id = s.OwnerUserId, Name = s.ReaderName ?? s.ReaderUser.Name })
-                       .ToDictionaryAsync(k => k.Id, v => v.Name);
-        }
 
         /// <summary>
         /// Get all relationships selected
@@ -410,7 +380,12 @@ namespace Domain.Repository
             return await GetRelationships(currentUserId);
         }
 
-
+        private async Task<DropModel> GetOldestDropYear(int currentUserId)
+        {
+            int year = DateTime.UtcNow.Year;
+            var dropsViewModel = await dropService.GetDrops(currentUserId, new List<int>(), new List<int>(), false, true, null, year, 0, true);
+            return dropsViewModel.Drops.FirstOrDefault();
+        }
 
         /*
         public async Task<OneTimePasswordModel> CreateOneTimePassword(string email) {
@@ -448,7 +423,6 @@ namespace Domain.Repository
         }
         */
 
-        private int expirationInMinutes = 7 * 60 * 24;
 
         private static string CreateToken()
         {
@@ -467,8 +441,6 @@ namespace Domain.Repository
             char let = (char)('a' + num);
             return let.ToString();
         }
-
-        private static string linkKey = ConfigurationManager.AppSettings["Link"] ?? "";
 
         private ILog logger = LogManager.GetLogger(nameof(UserService));
     }
