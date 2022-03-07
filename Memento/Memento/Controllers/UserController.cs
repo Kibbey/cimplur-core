@@ -100,8 +100,7 @@ namespace Memento.Web.Controllers
                 if (userId.HasValue) {
                     try {
                         var token = userWebToken.generateJwtToken(userId.Value);
-                        CookieHelper.SetAuthToken(token, HttpContext);
-                        return Ok();
+                        return Ok(token);
                     } catch (Exception e) {
                         logger.Error($"Login Controller {userId}", e);
                     }
@@ -123,8 +122,8 @@ namespace Memento.Web.Controllers
                     try
                     {
                         var token = userWebToken.generateJwtToken(userId.Value);
-                        CookieHelper.SetAuthToken(token, HttpContext);
-                        return Ok();
+                        // CookieHelper.SetAuthToken(token, HttpContext);
+                        return Ok(token);
                     }
                     catch (Exception e)
                     {
@@ -219,7 +218,6 @@ namespace Memento.Web.Controllers
             var reasons = Libs.CookieHelper.GetCookie<ReasonsModel>(reasonsCookie, HttpContext);
             int userId = await userService.AddUser(model.Email, userName, model.Token, model.AcceptTerms, model.Name, reasons?.Reasons);
             var token = userWebToken.generateJwtToken(userId);
-            CookieHelper.SetAuthToken(token, HttpContext);
             groupService.AddHelloWorldNetworks(userId);
             await dropService.AddHelloWorldDrop(userId);
             if (string.IsNullOrWhiteSpace(model.ReturnUrl))
@@ -241,7 +239,7 @@ namespace Memento.Web.Controllers
                 // TODO - Add back
                 //logger.Error("Send Emails", e);
             }
-            return Created("", userId);
+            return Created("", token);
         }
 
         [HttpPost]

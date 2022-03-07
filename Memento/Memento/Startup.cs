@@ -58,6 +58,7 @@ namespace Memento
             services.AddScoped<PlanService, PlanService>();
             services.AddScoped<ContactService, ContactService>();
             services.AddScoped<TokenService, TokenService>();
+            services.AddScoped<TransactionService, TransactionService>();
             services.AddControllers().AddNewtonsoftJson(); ;
             services.AddSwaggerGen(c =>
             {

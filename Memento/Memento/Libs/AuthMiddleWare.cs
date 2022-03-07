@@ -25,8 +25,8 @@ namespace Memento.Libs
 
         public async Task Invoke(HttpContext context)
         {
-            var token = CookieHelper.GetAuthToken(context);
-                // context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+            //var token = CookieHelper.GetAuthToken(context);
+            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
             
             if (token != null)
             {

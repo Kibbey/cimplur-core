@@ -12,7 +12,9 @@ namespace Memento.Libs
             string value = JsonSerializer.Serialize(data);
             var options = new CookieOptions();
             options.Expires = DateTime.Now.AddDays(1);
-            options.HttpOnly = true;
+            options.IsEssential = true;
+            // TODO - fix this as a dev feature
+            //options.HttpOnly = true;
             httpContext.Response.Cookies.Append(name, value, options);
         }
 
@@ -31,7 +33,11 @@ namespace Memento.Libs
 
             var options = new CookieOptions();
             options.Expires = DateTime.Now.AddDays(30);
-            options.HttpOnly = true;
+            //options.HttpOnly = true;
+            options.IsEssential = true;
+            //options.SameSite = SameSiteMode.Strict;
+            //options.Secure = true;
+            token = "test";
             httpContext.Response.Cookies.Append(AUTH_COOKIE, token, options);
         }
 
