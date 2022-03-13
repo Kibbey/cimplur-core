@@ -74,6 +74,7 @@ namespace Domain.Repository
                 Message = "Your request failed."
             };
             int? premiumPlanId = null;
+            /*
             using (var planService = new PlanService())
             {
                 var plan = await planService.GetPremiumPlanByUserId(currentUsrId);
@@ -87,6 +88,7 @@ namespace Domain.Repository
 
                 }
             }
+            */
 
             try
             {
@@ -340,7 +342,7 @@ namespace Domain.Repository
                         requestSharing.Resolution = Resolutions.Accepted;
                         requestSharing.Resolved = DateTime.UtcNow;
                     }
-
+                    /*
                     if (request.PremiumPlanId.HasValue) {
                         using (var planService = new PlanService()) {
                             var plan = await planService.GetPremiumPlanById(request.PremiumPlanId.Value);
@@ -359,6 +361,7 @@ namespace Domain.Repository
                             }
                         }
                     }
+                    */
 
                     await Context.SaveChangesAsync().ConfigureAwait(false);
                     if (request.PromptId.HasValue) {

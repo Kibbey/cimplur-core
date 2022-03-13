@@ -303,8 +303,10 @@ namespace Domain.Repository
             IQueryable<Drop> dropInclude = drops
                 .Include(i => i.Images)
                 .Include(m => m.Movies)
-                .Include(t => t.TagDrops.Select(s => s.UserTagId))
-                .Include(x => x.Comments.Select(s => s.Owner))
+                //.Include(t => t.TagDrops.Select(s => s.UserTag))
+                .Include(t => t.TagDrops)
+                //.Include(x => x.Comments.Select(s => s.Owner))
+                .Include(x => x.Comments)
                 .Include(x => x.Prompt)
                 .Include(x => x.Timeline);
             if (chronological)
@@ -362,9 +364,9 @@ namespace Domain.Repository
                         Foreign = !t.Owner.UserId.Equals(currentUserId),
                         Created = t.TimeStamp.ToString(),
                         Date = t.TimeStamp
-                    }).OrderBy(c => c.CommentId)
+                    })//.ToList().OrderBy(c => c.CommentId)
                 });
-            
+            // TODO - order comments after
             EventService.EmitEvent(EventService.ViewDrop, currentUserId);
             var dropModels = MapUserNames(currentUserId, await returnDrops.ToListAsync().ConfigureAwait(false));
             dropModels.ForEach((item) => item.Content.SplitStuff = SplitOnLink(item.Content.Stuff));

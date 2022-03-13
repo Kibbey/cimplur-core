@@ -19,7 +19,6 @@ namespace Memento.Web.Controllers
         private UserWebToken userWebToken;
         private SendEmailService sendEmailService;
         private UserService userService;
-        private PlanService planService;
         private GroupService groupService;
         private DropsService dropService;
         private SharingService sharingService;
@@ -27,7 +26,6 @@ namespace Memento.Web.Controllers
         public UserController(UserWebToken userWebToken, 
             SendEmailService sendEmailService,
             UserService userService,
-            PlanService planService,
             GroupService groupService,
             DropsService dropsService,
             SharingService sharingService,
@@ -35,7 +33,6 @@ namespace Memento.Web.Controllers
             this.userWebToken = userWebToken;
             this.sendEmailService = sendEmailService;
             this.userService = userService;
-            this.planService = planService;
             this.groupService = groupService;
             this.dropService = dropsService;
             this.sharingService = sharingService;
@@ -257,7 +254,9 @@ namespace Memento.Web.Controllers
         [Route("plans")]
         public async Task<IActionResult> GetAvailablePlanCount()
         {
-            return Ok(new { Count = await planService.GetAvaliableFamilyPlanCount(CurrentUserId) });
+            return Ok(new { Count = 0
+                //await planService.GetAvaliableFamilyPlanCount(CurrentUserId) 
+            });
         }
 
         [HttpGet]
