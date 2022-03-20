@@ -19,11 +19,13 @@ namespace Domain.Repository
             {
                 if (context == null)
                 {
+                    /*
                     IConfigurationRoot configuration = new ConfigurationBuilder()
                         .SetBasePath(Directory.GetCurrentDirectory())
-                        .AddJsonFile(@Directory.GetCurrentDirectory() + "/appsettings.json").Build();
+                        .AddJsonFile(@Directory.GetCurrentDirectory() + "/appsettings.json").Build();*/
                     var builder = new DbContextOptionsBuilder<StreamContext>();
-                    var connectionString = configuration.GetConnectionString("DatabaseConnection");
+                    var connectionString = Environment.GetEnvironmentVariable("DatabaseConnection");
+                    //var connectionString = configuration.GetConnectionString("DatabaseConnection");
                     builder.UseSqlServer(connectionString);
                     context = new StreamContext(builder.Options);
                 }
