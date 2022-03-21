@@ -111,12 +111,36 @@ namespace Domain.Repository
             return null;
         }
 
-        private Stream Compress(Stream stream)
-        {
-            return stream;
+        public String GetThumbLink(int imageId, int imageOwnerUserId, int dropId) {
+            using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
+            {
+                GetPreSignedUrlRequest getObjectRequest = new GetPreSignedUrlRequest
+                {
+                    BucketName = BucketNameThumb,
+                    Key = ThumbName(GetName(dropId, imageId.ToString(), imageOwnerUserId)) + thumbAppend,
+                    Expires = DateTime.Now.AddHours(3)
+                };
+
+                return s3Client.GetPreSignedURL(getObjectRequest);
+            }
         }
 
+        public String GetLink(int imageId, int imageOwnerUserId, int dropId)
+        {
+            using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
+            {
 
+                GetPreSignedUrlRequest getObjectRequest = new GetPreSignedUrlRequest
+                {
+                    BucketName = BucketName,
+                    Key = GetName(dropId, imageId.ToString(), imageOwnerUserId),
+                    Expires = DateTime.Now.AddHours(3)
+                };
+
+                return s3Client.GetPreSignedURL(getObjectRequest);
+            }
+        }
+        
         public async Task<Stream> Get(int imageId, int userId)
         {
             var image = await Context.MovieDrops.Include(i => i.Comment).FirstOrDefaultAsync(x => x.MovieDropId == imageId);

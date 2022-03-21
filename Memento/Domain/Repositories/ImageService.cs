@@ -13,9 +13,7 @@ using Domain.Exceptions;
 using Domain.Entities;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Metadata.Profiles.Exif;
 using ExifTag = SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag;
-using Amazon.Runtime;
 
 namespace Domain.Repository
 {

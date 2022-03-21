@@ -12,7 +12,7 @@ namespace Domain.Models
             Images = new List<int>();
             ImageLinks = new List<ImageModel>();
             Movies = new List<int>();
-            MovieLinks = new List<string>();
+            MovieLinks = new List<MovieModel>();
             Comments = new HashSet<CommentModel>();
         }
 
@@ -30,7 +30,7 @@ namespace Domain.Models
         public IEnumerable<int> Images { get; set; }
         public List<ImageModel> ImageLinks { get; set; }
         public IEnumerable<int> Movies { get; set; }
-        public List<string> MovieLinks { get; set; }
+        public List<MovieModel> MovieLinks { get; set; }
         public IEnumerable<GroupModel> Tags { get; set; }
         public bool Editable { get; set; }
         public PromptModel Prompt { get; set; }

@@ -368,7 +368,7 @@ namespace Domain.Repository
                         Foreign = !t.Owner.UserId.Equals(currentUserId),
                         Created = t.TimeStamp.ToString(),
                         Date = t.TimeStamp
-                    })//.ToList().OrderBy(c => c.CommentId)
+                    })
                 });
             EventService.EmitEvent(EventService.ViewDrop, currentUserId);
             var dropModels = MapUserNames(currentUserId, await returnDrops.ToListAsync().ConfigureAwait(false));
@@ -387,9 +387,17 @@ namespace Domain.Repository
                 foreach (var image in dropModel.Images) {
                     dropModel.ImageLinks.Add(new ImageModel(this.imageService.GetLink(image, dropModel.UserId, dropModel.DropId), image));
                 }
+                foreach (var movie in dropModel.Movies)
+                {
+                    dropModel.MovieLinks.Add(new MovieModel(
+                        this.movieService.GetLink(movie, dropModel.UserId, dropModel.DropId), 
+                        movie,
+                        this.movieService.GetThumbLink(movie, dropModel.UserId, dropModel.DropId)
+                    ));
+                }
+                // comments map image links / movies
             }
-            // order comments
-            // map image links / movies
+
             return dropModels;
         }
 
