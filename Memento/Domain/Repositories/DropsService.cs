@@ -385,7 +385,7 @@ namespace Domain.Repository
             foreach (var dropModel in dropModels) {
                 dropModel.Comments = dropModel.Comments.OrderBy(x => x.CommentId);
                 foreach (var image in dropModel.Images) {
-                    dropModel.ImageLinks.Add(this.imageService.GetLink(image, dropModel.UserId, dropModel.DropId));
+                    dropModel.ImageLinks.Add(new ImageModel(this.imageService.GetLink(image, dropModel.UserId, dropModel.DropId), image));
                 }
             }
             // order comments

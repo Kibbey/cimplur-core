@@ -6,6 +6,7 @@ C:\Users\kibbe\repo\cimplur-core\Memento\Domain\bin\Debug\net5.0\Domain.runtimec
 C:\Users\kibbe\repo\cimplur-core\Memento\Domain\bin\Debug\net5.0\Domain.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\Domain\bin\Debug\net5.0\ref\Domain.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\Domain\bin\Debug\net5.0\Domain.pdb
+C:\Users\kibbe\repo\cimplur-core\Memento\Domain\obj\Debug\net5.0\Domain.csproj.AssemblyReference.cache
 C:\Users\kibbe\repo\cimplur-core\Memento\Domain\obj\Debug\net5.0\Domain.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\kibbe\repo\cimplur-core\Memento\Domain\obj\Debug\net5.0\Domain.AssemblyInfoInputs.cache
 C:\Users\kibbe\repo\cimplur-core\Memento\Domain\obj\Debug\net5.0\Domain.AssemblyInfo.cs
@@ -14,4 +15,3 @@ C:\Users\kibbe\repo\cimplur-core\Memento\Domain\obj\Debug\net5.0\Domain.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\Domain\obj\Debug\net5.0\ref\Domain.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\Domain\obj\Debug\net5.0\Domain.pdb
 C:\Users\kibbe\repo\cimplur-core\Memento\Domain\obj\Debug\net5.0\Domain.genruntimeconfig.cache
-C:\Users\kibbe\repo\cimplur-core\Memento\Domain\obj\Debug\net5.0\Domain.csproj.AssemblyReference.cache

@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 
 namespace Domain.Models
@@ -13,7 +10,7 @@ namespace Domain.Models
             UserTagDrops = new HashSet<GroupDropModel>();
             Droplets = new List<DropletModel>();
             Images = new List<int>();
-            ImageLinks = new List<string>();
+            ImageLinks = new List<ImageModel>();
             Movies = new List<int>();
             MovieLinks = new List<string>();
             Comments = new HashSet<CommentModel>();
@@ -31,7 +28,7 @@ namespace Domain.Models
         public int? CompletedByUserId { get; set; }
         public bool IsTask { get; set; }
         public IEnumerable<int> Images { get; set; }
-        public List<string> ImageLinks { get; set; }
+        public List<ImageModel> ImageLinks { get; set; }
         public IEnumerable<int> Movies { get; set; }
         public List<string> MovieLinks { get; set; }
         public IEnumerable<GroupModel> Tags { get; set; }
