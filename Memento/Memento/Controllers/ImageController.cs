@@ -49,14 +49,12 @@ namespace Memento.Web.Controllers
         [Route("")]
         public async Task<IActionResult> PostFormData(IFormFile formFile)
         {
-            /*
-            var file = HttpContext.Current.Request.Files.Count > 0 ?
-                HttpContext.Current.Request.Files[0] : null;
-            */
-            var file = formFile;
+            
+            var file = HttpContext.Request.Form.Files.Count > 0 ?
+                HttpContext.Request.Form.Files[0] : null;
             // TODO - verify below - this may NOT be the way to pull this from the query / path
-            var dropId = Int32.Parse(HttpContext.Request.Query["dropId"]);
-            var commentIdParam = (String)HttpContext.Request.Query["commentId"];
+            var dropId = Int32.Parse(HttpContext.Request.Form["dropId"]);
+            var commentIdParam = (String)HttpContext.Request.Form["commentId"];
             int? commentId = null;
             if (commentIdParam != null) {
                 commentId = int.Parse(commentIdParam);

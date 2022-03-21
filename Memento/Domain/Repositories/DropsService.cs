@@ -110,7 +110,10 @@ namespace Domain.Repository
         {
             networkIds = networkIds ?? new List<long>();
             networkIds = networkIds.Distinct().ToList();
-            var drop = await Context.Drops.Include(i => i.Images).Include(m => m.Movies)
+            var drop = await Context.Drops
+                .Include(i => i.Images)
+                .Include(m => m.Movies)
+                .Include(c => c.ContentDrop)
                 .FirstOrDefaultAsync(x => x.DropId == model.DropId && x.UserId == userId).ConfigureAwait(false);
 
             if (drop == null)
@@ -334,6 +337,7 @@ namespace Domain.Repository
                     Images = s.Images.Where(x => !x.CommentId.HasValue).Select(t => t.ImageDropId),
                     Movies = s.Movies.Where(x => !x.CommentId.HasValue).Select(t => t.MovieDropId),
                     Editable = s.CreatedBy.UserId == currentUserId,
+                    UserId = s.CreatedBy.UserId,
                     Content = new ContentModel
                     {
                         ContentId = s.DropId,
@@ -366,13 +370,26 @@ namespace Domain.Repository
                         Date = t.TimeStamp
                     })//.ToList().OrderBy(c => c.CommentId)
                 });
-            // TODO - order comments after
             EventService.EmitEvent(EventService.ViewDrop, currentUserId);
             var dropModels = MapUserNames(currentUserId, await returnDrops.ToListAsync().ConfigureAwait(false));
             dropModels.ForEach((item) => item.Content.SplitStuff = SplitOnLink(item.Content.Stuff));
             dropModels.ForEach(dropItem => {
                 if (dropItem.Prompt != null) dropItem.Prompt.Question = dropItem.Prompt.Question?.Replace("{{name}}", dropItem.Timeline?.Name);
             });
+            return OrderedWithImages(dropModels);
+        }
+
+        private List<DropModel> OrderedWithImages(List<DropModel> dropModels) {
+            // update image links
+            // update movie links
+            foreach (var dropModel in dropModels) {
+                dropModel.Comments = dropModel.Comments.OrderBy(x => x.CommentId);
+                foreach (var image in dropModel.Images) {
+                    dropModel.ImageLinks.Add(this.imageService.GetLink(image, dropModel.UserId, dropModel.DropId));
+                }
+            }
+            // order comments
+            // map image links / movies
             return dropModels;
         }
 

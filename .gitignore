@@ -29,6 +29,9 @@ bld/
 [Bb]in/
 [Oo]bj/
 [Oo]ut/
+Memento/Memento/obj/
+Memento/Memento/bin/
+Memento/.vs/
 msbuild.log
 msbuild.err
 msbuild.wrn

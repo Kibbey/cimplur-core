@@ -15,6 +15,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Metadata.Profiles.Exif;
 using ExifTag = SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag;
+using Amazon.Runtime;
 
 namespace Domain.Repository
 {
@@ -62,7 +63,8 @@ namespace Domain.Repository
             Stream stream;
             try {
                 stream = await ReSizeImageAsync(file);
-                // Create S3 service client.             
+                // Create S3 service client.
+                //var creds = new AWSCredentials("", "");
                 using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
                 {                 // Setup request for putting an object in S3.                 
                     PutObjectRequest request = new PutObjectRequest
@@ -89,6 +91,23 @@ namespace Domain.Repository
             
             return true;
         }
+
+        public String GetLink(int imageId, int imageOwnerUserId, int dropId)
+        {
+            using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
+            {
+
+                GetPreSignedUrlRequest getObjectRequest = new GetPreSignedUrlRequest
+                {
+                    BucketName = BucketName,
+                    Key = GetName(dropId, imageId.ToString(), imageOwnerUserId),
+                    Expires = DateTime.Now.AddHours(3)
+                };
+
+                return s3Client.GetPreSignedURL(getObjectRequest);
+            }
+        }
+
 
 
         public async Task<Stream> Get(int imageId, int userId)
@@ -234,32 +253,6 @@ namespace Domain.Repository
 
             image.Mutate(x => x.Resize((int)width, (int)height));
             return image;
-            //image.SaveAsJpegAsync("");
-            /*
-            var destRect = new Rectangle(0, 0, (int)width, (int)height);
-            var destImage = new Bitmap((int)width, (int)height);
-
-            destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
-
-            using (var graphics = Graphics.FromImage(destImage))
-            {
-                graphics.CompositingMode = CompositingMode.SourceCopy;
-                graphics.CompositingQuality = CompositingQuality.Default;
-                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                graphics.SmoothingMode = SmoothingMode.HighQuality;
-                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                using (var wrapMode = new ImageAttributes())
-                {
-                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-                    graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
-                }
-            }
-            //foreach (var item in image.PropertyItems)
-            //{
-            //    //destImage.SetPropertyItem(item);
-            //}*/
-            //return destImage;
         }
 
         public static string GetName(int dropId, string imageId, int userId) 

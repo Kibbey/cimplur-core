@@ -14,12 +14,8 @@ namespace Memento.Libs
             foreach (var line in File.ReadAllLines(filePath))
             {
                 var parts = line.Split(new[] { '=' }, 2);
-                /*
-                line.Split(
-                    '=',
-                    StringSplitOptions.RemoveEmptyEntries);*/
 
-                Environment.SetEnvironmentVariable(parts[0], parts[1]);
+                Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
             }
         }
     }

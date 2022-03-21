@@ -28,6 +28,7 @@ namespace Domain.Repository
                 AlbumPublicId = Guid.NewGuid().ToString()
             };
             Context.AlbumExports.Add(export);
+            /*
             results.Drops.ForEach(drop => {
                 drop.ImageLinks = drop.Images.ToDictionary(k => k, v =>
                     ImageService.GetName(drop.DropId, v.ToString(), drop.CreatedById)
@@ -43,7 +44,7 @@ namespace Domain.Repository
                         MovieService.GetName(drop.DropId, v.ToString(), comment.OwnerId)
                     );
                 });
-            });
+            });*/
 
             // permissions ??? hash json and compare - maybe use as key?
             // manipulate routes for images and movies
