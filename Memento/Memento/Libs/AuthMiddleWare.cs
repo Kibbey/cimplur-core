@@ -54,9 +54,9 @@ namespace Memento.Libs
 
                 var jwtToken = (JwtSecurityToken)validatedToken;
                 var userId = int.Parse(jwtToken.Claims.First(x => x.Type == "id").Value);
-                var userWebToken = new UserWebToken(configAppSettings);
-                var newToken = userWebToken.generateJwtToken(userId);
-                CookieHelper.SetAuthToken(newToken, context);
+                //TODO - sliding expiration ??
+                //var userWebToken = new UserWebToken(configAppSettings);
+                //var newToken = userWebToken.generateJwtToken(userId);
                 // attach user to context on successful jwt validation
                 context.Items["UserId"] = userId;
             }

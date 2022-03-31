@@ -28,10 +28,10 @@ namespace Domain.Emails
         {
             var extendedModel = await AddTokenToModel(email, template, model).ConfigureAwait(false);
             var from = GetFrom(template, model);
-            var body = EmailRender.GetStringFromView(EmailTemplates.GetTemplateByName(template), extendedModel);
+            var body = await EmailRender.GetStringFromView(template.ToString(), EmailTemplates.GetTemplateByName(template), extendedModel);
             // Outlook does NOT like /#/ in a Url - this is a substitute with re-write url
             body = EmailSafeLinkCreator.FindAndReplaceLinks(body);
-            var subject = EmailRender.GetStringFromView(EmailTemplates.GetSubjectByName(template), model);
+            var subject = await EmailRender.GetStringFromView(template.ToString(), EmailTemplates.GetSubjectByName(template), model);
             var text = GetPlainTextFromHtml(body);
             await SendPostmarkEmail(email, from, subject, text, body, template.ToString(), subject).ConfigureAwait(false);
         }

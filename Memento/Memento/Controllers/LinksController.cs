@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Memento.Libs;
 using Domain.Repository;
+using Memento.Models;
 
 namespace Memento.Web.Controllers
 {
@@ -28,25 +29,35 @@ namespace Memento.Web.Controllers
         public async Task<IActionResult> Index(string token)
         {
             var newRoute = EmailSafeLinkCreator.UnencodeLink(token);
-            await Login(newRoute);
-            return Redirect(Constants.BaseUrl + newRoute);
+            var loginToken = await Login(newRoute);
+            var path = EmailSafeLinkCreator.GetPath(newRoute);
+            if (loginToken == null) {
+                return Redirect(Constants.HostUrl);
+            } else {
+                return Redirect(CreateRoute(path, loginToken));
+            }
         }
 
-        private async Task Login(string route) {
-            if (route == null || route.Length > 300) return;
+        private string CreateRoute(string newRoute, string token) {
+            var result = $"{Constants.HostUrl}/#/links?route={newRoute}&token={token}";
+            return result;
+        }
+
+        private async Task<string> Login(string route) {
+            if (route == null || route.Length > 300) return null;
             try {
                 var linkToken = EmailSafeLinkCreator.RetrieveLink(route);
                 if (!string.IsNullOrWhiteSpace(linkToken))
                 {
                     var userId = await tokenService.ValidateToken(linkToken);
                     if (userId.HasValue && CurrentUserId != userId) {
-                        var token = _userWebToken.generateJwtToken(userId.Value);
-                        CookieHelper.SetAuthToken(token, HttpContext);
+                        return _userWebToken.generateJwtToken(userId.Value);
                     }
                 }
             } catch (Exception e) {
                 logger.Error($"Link Controller -", e);
             }
+            return null;
         }
 
         private ILog logger = LogManager.GetLogger(nameof(LinksController));

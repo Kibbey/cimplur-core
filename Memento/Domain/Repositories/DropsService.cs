@@ -395,7 +395,22 @@ namespace Domain.Repository
                         this.movieService.GetThumbLink(movie, dropModel.UserId, dropModel.DropId)
                     ));
                 }
-                // comments map image links / movies
+                foreach (var comment in dropModel.Comments) {
+                    // comments map image links / movies
+                    foreach (var image in comment.Images)
+                    {
+                        comment.ImageLinks.Add(new ImageModel(this.imageService.GetLink(image, comment.OwnerId, dropModel.DropId), image));
+                    }
+                    foreach (var movie in comment.Movies)
+                    {
+                        comment.MovieLinks.Add(new MovieModel(
+                            this.movieService.GetLink(movie, comment.OwnerId, dropModel.DropId),
+                            movie,
+                            this.movieService.GetThumbLink(movie, comment.OwnerId, dropModel.DropId)
+                        ));
+                    }
+
+                }
             }
 
             return dropModels;

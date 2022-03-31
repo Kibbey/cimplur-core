@@ -76,7 +76,6 @@ namespace Domain.Repository
             return true;
         }
 
-
         public async Task<Stream> GetThumb(int imageId, int userId)
         {
             //todo: security check - parse name and check with userId...

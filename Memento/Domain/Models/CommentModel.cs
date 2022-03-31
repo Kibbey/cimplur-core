@@ -7,9 +7,9 @@ namespace Domain.Models
     {
         public CommentModel() {
             Images = new List<int>();
-            ImageLinks = new Dictionary<int,string>();
+            ImageLinks = new List<ImageModel>();
             Movies = new List<int>();
-            MovieLinks = new Dictionary<int, string>();
+            MovieLinks = new List<MovieModel>();
         }
 
         public int CommentId { get; set; }
@@ -21,9 +21,9 @@ namespace Domain.Models
         public int OwnerId { get; set; }
         public DateTime Date { get; set; }
         public IEnumerable<int> Images { get; set; }
-        public Dictionary<int, string> ImageLinks { get; set; }
+        public List<ImageModel> ImageLinks { get; set; }
         public IEnumerable<int> Movies { get; set; }
-        public Dictionary<int, string> MovieLinks { get; set; }
+        public List<MovieModel> MovieLinks { get; set; }
     }
 
     public enum KindOfComments { 

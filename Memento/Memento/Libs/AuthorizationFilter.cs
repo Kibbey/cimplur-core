@@ -12,7 +12,8 @@ namespace Memento.Libs
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             var userId = context.HttpContext.Items["UserId"];
-            if (userId == null)
+            var path = context.HttpContext.Request.Path;
+            if (userId == null && path != "/api/links")
             {
                 // not logged in
                 context.Result = new JsonResult(new { message = "Unauthorized" }) { StatusCode = StatusCodes.Status401Unauthorized };

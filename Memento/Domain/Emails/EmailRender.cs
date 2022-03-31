@@ -1,12 +1,16 @@
-﻿using RazorEngine;
-using RazorEngine.Templating;
+﻿using RazorLight;
+using System.Threading.Tasks;
 
 namespace Domain.Emails
 {
     public class EmailRender
     {
-        public static string GetStringFromView(string View, object model){
-            return Engine.Razor.RunCompile(View, "templateKey", null, model);
+        public async static Task<string> GetStringFromView(string key, string view, object model) {
+            var razorEngine = new RazorLightEngineBuilder()
+                .UseEmbeddedResourcesProject(typeof(EmailRender)) // exception without this (or another project type)
+                .UseMemoryCachingProvider()
+                .Build();
+            return await razorEngine.CompileRenderStringAsync(key, view, model);
         }
     }
 }

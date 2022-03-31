@@ -27,7 +27,13 @@ namespace Domain.Utilities
             return WebUtility.UrlDecode(match.Value);
         }
 
+        public static string GetPath(string route) {
+            return WebUtility.UrlEncode(route.Replace(pathPattern, ""));
+        }
+
         private static string pattern = @"\/#\/.+?(?=')";
         private static string linkPattern = @"(?<=link=).+?((?=&)|\z)";
+        private static string pathPattern = @"#/";
+
     }
 }

@@ -28,9 +28,11 @@ C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Magick.NET.
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.AspNetCore.Http.Features.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.AspNetCore.JsonPatch.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll
+C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.AspNetCore.Mvc.Razor.Extensions.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.AspNetCore.Razor.Language.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.CodeAnalysis.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.CodeAnalysis.CSharp.dll
+C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.CodeAnalysis.Razor.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.VisualStudio.CodeCoverage.Shim.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.Data.SqlClient.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.EntityFrameworkCore.dll
@@ -38,6 +40,7 @@ C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.E
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.EntityFrameworkCore.Relational.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.EntityFrameworkCore.SqlServer.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.Extensions.DependencyInjection.dll
+C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.Extensions.DependencyModel.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.Extensions.Primitives.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.Identity.Client.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Microsoft.IdentityModel.JsonWebTokens.dll
@@ -59,7 +62,8 @@ C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Newtonsoft.
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Newtonsoft.Json.Bson.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\NuGet.Frameworks.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Postmark.dll
-C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\RazorEngine.NetCore.dll
+C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\RazorLight.dll
+C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\SixLabors.ImageSharp.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Stripe.net.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Swashbuckle.AspNetCore.Swagger.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\Swashbuckle.AspNetCore.SwaggerGen.dll
@@ -199,4 +203,3 @@ C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\obj\Debug\net5.0\DomainTest.
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\obj\Debug\net5.0\ref\DomainTest.dll
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\obj\Debug\net5.0\DomainTest.pdb
 C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\obj\Debug\net5.0\DomainTest.genruntimeconfig.cache
-C:\Users\kibbe\repo\cimplur-core\Memento\DomainTest\bin\Debug\net5.0\SixLabors.ImageSharp.dll
