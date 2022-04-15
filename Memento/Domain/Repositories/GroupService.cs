@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
-using Newtonsoft;
 using static Domain.Emails.EmailTemplates;
 using Domain.Emails;
 using Newtonsoft.Json;

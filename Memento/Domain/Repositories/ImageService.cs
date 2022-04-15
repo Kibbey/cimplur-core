@@ -14,6 +14,7 @@ using Domain.Entities;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using ExifTag = SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag;
+using Domain.Models;
 
 namespace Domain.Repository
 {
@@ -255,7 +256,7 @@ namespace Domain.Repository
 
         public static string GetName(int dropId, string imageId, int userId) 
         {
-            if (InProduction)
+            if (Constants.InProduction)
             {
                 return string.Format("{0}/{1}/{2}", userId, dropId.ToString(), imageId);
             }

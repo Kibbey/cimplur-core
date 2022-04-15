@@ -2,7 +2,7 @@
 using Domain.Entities;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace Domain.Utilities
 {
@@ -14,7 +14,7 @@ namespace Domain.Utilities
             var currentPeople = userProfile.CurrentPeople;
             if (currentPeople != null)
             {
-                people = JsonSerializer.Deserialize<List<PersonModelV2>>(currentPeople);
+                people = JsonConvert.DeserializeObject<List<PersonModelV2>>(currentPeople);
             }
             return people.Distinct(new PersonModelEqualityComparer()).ToList();
         }

@@ -33,15 +33,6 @@ namespace Domain.Repository
             }
         }
 
-
-        protected static bool InProduction
-        {
-            get
-            {
-                return Convert.ToBoolean(ConfigurationManager.AppSettings["Production"] ?? "false");
-            }
-        }
-
         protected static string BucketName { get { return "cimplur"; } }
         protected static string BucketNameThumb { get { return "cimplurthumbs"; } }
 

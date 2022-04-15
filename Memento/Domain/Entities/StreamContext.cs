@@ -29,7 +29,7 @@ namespace Domain.Entities
         {
             modelBuilder.BuildIndexesFromAnnotations();
             // use convention
-            //modelBuilder.Conventions.Remove<PluralizingTableNameConvention>();
+            // modelBuilder.Conventions.Remove<PluralizingTableNameConvention>();
             // already commented out v
             //modelBuilder.Conventions.Remove<OneToManyNoActionDeleteConvention>();
 

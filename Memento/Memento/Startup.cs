@@ -3,18 +3,19 @@ using Domain.Models;
 using Domain.Repository;
 using Memento.Libs;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using System;
+
 
 namespace Memento
 {
     public class Startup
     {
+        ILogger Logger;
 
         public Startup(IConfiguration configuration)
         {
@@ -40,8 +41,7 @@ namespace Memento
                 });
             });
 
-            Console.Out.WriteLine("Hello world!");
-            services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
+            services.Configure<AppSettings>(Configuration);
             services.AddScoped<UserWebToken, UserWebToken>();
             services.AddScoped<SendEmailService, SendEmailService>();
             services.AddScoped<NotificationService, NotificationService>();
@@ -70,15 +70,14 @@ namespace Memento
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            string testEnv = Environment.GetEnvironmentVariable("TEST_ENV");
-            var envTest = Environment.GetEnvironmentVariables();
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Memento v1"));
             }
-            app.UseExceptionHandler(err => err.UseCustomErrors(env));
+            Logger = app.ApplicationServices.GetRequiredService(typeof(ILogger<Startup>)) as ILogger;
+            app.UseExceptionHandler(err => err.UseCustomErrors(env, Logger));
             app.UseHttpsRedirection();
             app.UseMiddleware<AuthMiddleWare>();
             app.UseRouting();

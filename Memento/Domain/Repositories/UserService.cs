@@ -9,8 +9,8 @@ using Domain.Exceptions;
 using static Domain.Emails.EmailTemplates;
 using System.Collections.Generic;
 using log4net;
-using System.Text.Json;
 using Domain.Emails;
+using Newtonsoft.Json;
 
 namespace Domain.Repository
 {
@@ -49,7 +49,7 @@ namespace Domain.Repository
             user.Created = DateTime.UtcNow;
             user.Name = name;
             if (reasons != null) {
-                user.Reasons = JsonSerializer.Serialize(reasons);
+                user.Reasons = JsonConvert.SerializeObject(reasons);
             }
             if (acceptTerms) {
                 user.AcceptedTerms = DateTime.UtcNow;

@@ -10,8 +10,8 @@ using static Domain.Emails.EmailTemplates;
 using Domain.Emails;
 using log4net;
 using System.Data;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore.Storage;
+using Newtonsoft.Json;
 
 namespace Domain.Repository
 {
@@ -92,7 +92,7 @@ namespace Domain.Repository
 
             try
             {
-                string tags = JsonSerializer.Serialize(connectionRequestModel.Tags);
+                string tags = JsonConvert.SerializeObject(connectionRequestModel.Tags);
                 var now = DateTime.UtcNow;
                 var request = new ShareRequest
                 {
@@ -239,7 +239,7 @@ namespace Domain.Repository
                 var request = Context.ShareRequests.Where(x => x.RequestKey.Equals(requestToken) && !x.Used).FirstOrDefault();
                 if (request != null)
                 {
-                    List<long> tags = JsonSerializer.Deserialize<List<long>>(request.TagsToShare);
+                    List<long> tags = JsonConvert.DeserializeObject<List<long>>(request.TagsToShare);
                     return new ConnectionRequestModel
                     {
                         ContactName = request.TargetAlias ?? request.TargetsEmail,
@@ -306,7 +306,7 @@ namespace Domain.Repository
                 var currentUser = await Context.UserProfiles.SingleAsync(u => u.UserId == userId);
                 if (request != null)
                 {
-                    List<long> groupIds = JsonSerializer.Deserialize<List<long>>(request.TagsToShare);
+                    List<long> groupIds = JsonConvert.DeserializeObject<List<long>>(request.TagsToShare);
                     List<GroupModel> tagModels = new List<GroupModel>();
                     if (groupIds != null && groupIds.Any())
                     {
@@ -669,7 +669,7 @@ namespace Domain.Repository
             var suggestionIds = await Context.SharingSuggestions.Where(x => x.OwnerUserId == userId && x.Resolution == Resolutions.NotResolved)
                     .Select(s => s.SuggestedUserId).OrderBy(x => x)
                     .ToListAsync().ConfigureAwait(false);
-            string suggestionIdStrings = JsonSerializer.Serialize(suggestionIds);
+            string suggestionIdStrings = JsonConvert.SerializeObject(suggestionIds);
             if (!ignoreChanges)
             {
                 profile.NotififySuggestions = suggestionIdStrings != profile.CurrentSuggestedPeople;

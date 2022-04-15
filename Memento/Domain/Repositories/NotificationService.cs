@@ -8,8 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using System.Dynamic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Text.Json;
+
 using static Domain.Emails.EmailTemplates;
+using Newtonsoft.Json;
 
 namespace Domain.Repository
 {
@@ -78,7 +79,7 @@ namespace Domain.Repository
             notifications.Notifications.RemoveAll(x => x.DropId == dropId || x.NotificationType == NotificationType.Suggestion);
             if (notifications.Notifications.Count != count) {
                 var user = await Context.UserProfiles.SingleAsync(x => x.UserId == currentUserId).ConfigureAwait(false);
-                var currentNotifications = JsonSerializer.Serialize(notifications.Notifications);
+                var currentNotifications = JsonConvert.SerializeObject(notifications.Notifications);
                 user.CurrentNotifications = currentNotifications;
                 await Context.SaveChangesAsync().ConfigureAwait(false);
             }
@@ -91,9 +92,9 @@ namespace Domain.Repository
             var currentNotifications = user.CurrentNotifications;
             if (!string.IsNullOrWhiteSpace(currentNotifications))
             {
-                notifications.Notifications = JsonSerializer.Deserialize<List<NotificationModel>>(currentNotifications);
+                notifications.Notifications = JsonConvert.DeserializeObject<List<NotificationModel>>(currentNotifications);
                 notifications.Notifications = RemoveExpired(notifications.Notifications);
-                currentNotifications = JsonSerializer.Serialize(notifications.Notifications);
+                currentNotifications = JsonConvert.SerializeObject(notifications.Notifications);
                 user.CurrentNotifications = currentNotifications;
                 Context.SaveChanges();
                 notifications.Notifications.ForEach(x => x.Name.ToUpper());
@@ -159,7 +160,7 @@ namespace Domain.Repository
                     //add to notifications
                     var notifications = targetUser.CurrentNotifications ?? string.Empty;
                     bool removeOld = notifications.Length > 7000;
-                    var currentNotifcations = JsonSerializer.Deserialize<List<NotificationModel>>(notifications) ?? new List<NotificationModel>();
+                    var currentNotifcations = JsonConvert.DeserializeObject<List<NotificationModel>>(notifications) ?? new List<NotificationModel>();
 
                     currentNotifcations = RemoveExpired(currentNotifcations, removeOld);
                     // if we already told them about this in anothet context and they have not viewed it - then skip the email.
@@ -172,7 +173,7 @@ namespace Domain.Repository
                     // And fix my stupid code...or don't for now so someone in the future can hate us both!
                     currentNotifcations.Add(new NotificationModel { Name = name, DropId = typeId ?? 0, CreatedAt = now, Viewed = false, NotificationType = notificationType });
                     
-                    targetUser.CurrentNotifications = JsonSerializer.Serialize(currentNotifcations.Distinct(new NotificationModelComparer()).OrderBy(x => x.CreatedAt));                                
+                    targetUser.CurrentNotifications = JsonConvert.SerializeObject(currentNotifcations.Distinct(new NotificationModelComparer()).OrderBy(x => x.CreatedAt));                                
 
                     await Context.SaveChangesAsync().ConfigureAwait(false);
                     if (emailTypes.HasValue) {
@@ -193,7 +194,7 @@ namespace Domain.Repository
             var notificationsString = user.CurrentNotifications;
             if (!string.IsNullOrWhiteSpace(notificationsString))
             {
-                var currentNotifcations = JsonSerializer.Deserialize<List<NotificationModel>>(notificationsString);
+                var currentNotifcations = JsonConvert.DeserializeObject<List<NotificationModel>>(notificationsString);
                 var notifications = currentNotifcations?.Where(x => x.DropId == dropId);
                 if (notifications != null && notifications.Any())
                 {
@@ -210,7 +211,7 @@ namespace Domain.Repository
                         }
                     }
                     
-                    user.CurrentNotifications = JsonSerializer.Serialize(currentNotifcations);
+                    user.CurrentNotifications = JsonConvert.SerializeObject(currentNotifcations);
                     Context.SaveChanges();
                 }
             }
@@ -222,7 +223,7 @@ namespace Domain.Repository
             var notifications = user.CurrentNotifications;
             if (!string.IsNullOrWhiteSpace(notifications))
             {
-                user.CurrentNotifications = JsonSerializer.Serialize(new List<NotificationModel>());
+                user.CurrentNotifications = JsonConvert.SerializeObject(new List<NotificationModel>());
                 Context.SaveChanges();
             }
         }

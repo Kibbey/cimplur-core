@@ -169,7 +169,7 @@ namespace Domain.Repository
             
             connectedUserIds.Add(currentUserId);
             // we show timelines that your connections have created or are following
-            var timelines = await Context.Timelines
+            var timelines = await Context.Timelines.Include(i => i.TimelineUsers)
                 .Where(x => connectedUserIds.Contains(x.UserId)
                 || x.TimelineUsers.Any(a => connectedUserIds.Contains(a.UserId))).ToListAsync();
             return timelines.Select(s => MapFromTimeline(s, s.TimelineUsers.Where(x => x.UserId == currentUserId).FirstOrDefault(), currentUserId))

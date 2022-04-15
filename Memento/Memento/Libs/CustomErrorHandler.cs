@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Diagnostics;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Domain.Exceptions;
 using Memento.Models;
@@ -11,12 +8,16 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 public static class CustomErrorHandler
 {
-    public static void UseCustomErrors(this IApplicationBuilder app, IHostEnvironment environment)
+    private static ILogger _logger;
+    public static void UseCustomErrors(this IApplicationBuilder app, IHostEnvironment environment, ILogger logger)
     {
+        _logger = logger;
+        _logger.LogInformation("Hello World Logger");
         if (environment.IsDevelopment())
         {
             app.Use(WriteDevelopmentResponse);
@@ -42,6 +43,7 @@ public static class CustomErrorHandler
         // Should always exist, but best to be safe!
         if (ex != null)
         {
+            _logger.LogInformation(ex.Message);
             // ProblemDetails has it's own content type
             httpContext.Response.ContentType = "application/problem+json";
             var problem = new ErrorResponse

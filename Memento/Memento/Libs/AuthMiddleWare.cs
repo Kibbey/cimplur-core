@@ -60,7 +60,7 @@ namespace Memento.Libs
                 // attach user to context on successful jwt validation
                 context.Items["UserId"] = userId;
             }
-            catch
+            catch (Exception e)
             {
                 // throw new 401
             }

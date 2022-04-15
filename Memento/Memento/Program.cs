@@ -14,12 +14,15 @@ namespace Memento
             var root = Directory.GetCurrentDirectory();
             var dotenv = Path.Combine(root, ".env");
             LoadDotEnv.Load(dotenv);
-
             CreateHostBuilder(args).Build().Run();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
+            Host.CreateDefaultBuilder(args).ConfigureLogging(logging =>
+                {
+                    logging.ClearProviders();
+                    logging.AddConsole();
+                })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();

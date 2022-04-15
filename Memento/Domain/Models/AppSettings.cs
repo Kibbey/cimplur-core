@@ -10,6 +10,5 @@
         public string EmailCode { get; set; }
         public string EmailToken { get; set; }
         public string Link { get; set; }
-        public string TestEnv { get; set; }
     }
 }

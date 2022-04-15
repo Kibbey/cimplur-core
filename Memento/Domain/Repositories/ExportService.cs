@@ -10,6 +10,7 @@ using System.Text;
 using Domain.Entities;
 using Amazon.SQS.Model;
 using System.Linq;
+using Domain.Models;
 
 namespace Domain.Repository
 {
@@ -57,7 +58,7 @@ namespace Domain.Repository
                 // Create S3 service client.             
                 using (IAmazonS3 s3Client = new AmazonS3Client(RegionEndpoint.USEast1))
                 {                 // Setup request for putting an object in S3.
-                    key = InProduction ? key : "test/" + key;
+                    key = Constants.InProduction ? key : "test/" + key;
                     PutObjectRequest request = new PutObjectRequest
                     {
                         BucketName = BucketName,

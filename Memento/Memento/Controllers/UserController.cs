@@ -2,7 +2,6 @@
 using Domain.Emails;
 using Domain.Exceptions;
 using Domain.Repository;
-using log4net;
 using Memento.Models;
 using Memento.Web.Models;
 using System;
@@ -10,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using static Domain.Emails.EmailTemplates;
 using Memento.Libs;
+using Microsoft.Extensions.Logging;
 
 namespace Memento.Web.Controllers
 {
@@ -29,7 +29,7 @@ namespace Memento.Web.Controllers
             GroupService groupService,
             DropsService dropsService,
             SharingService sharingService,
-            TokenService tokenService) {
+            TokenService tokenService, ILogger<UserController> logger) {
             this.userWebToken = userWebToken;
             this.sendEmailService = sendEmailService;
             this.userService = userService;
@@ -37,6 +37,7 @@ namespace Memento.Web.Controllers
             this.dropService = dropsService;
             this.sharingService = sharingService;
             this.tokenService = tokenService;
+            this.logger = logger;
         }
 
         [CustomAuthorization]
@@ -99,7 +100,7 @@ namespace Memento.Web.Controllers
                         var token = userWebToken.generateJwtToken(userId.Value);
                         return Ok(token);
                     } catch (Exception e) {
-                        logger.Error($"Login Controller {userId}", e);
+                        logger.LogError($"Login Controller {userId}", e);
                     }
                 }
             }
@@ -124,7 +125,7 @@ namespace Memento.Web.Controllers
                     }
                     catch (Exception e)
                     {
-                        logger.Error($"Login Controller {userId}", e);
+                        logger.LogError($"Login Controller {userId}", e);
                     }
                 return Ok();
             }
@@ -327,7 +328,7 @@ namespace Memento.Web.Controllers
             }
             catch (Exception e)
             {
-                logger.Error("Send Emails", e);
+                logger.LogError("Send Emails", e);
             }
             return Ok(new { Name });
         }
@@ -354,6 +355,6 @@ namespace Memento.Web.Controllers
 
         private string reasonsCookie = "reasons";
 
-        private ILog logger = LogManager.GetLogger(nameof(UserController));
+        private ILogger logger;
     }
 }

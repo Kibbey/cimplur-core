@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using System;
-using System.Text.Json;
+//using System.Text.Json;
 
 namespace Memento.Libs
 {
@@ -9,7 +10,7 @@ namespace Memento.Libs
         private static string AUTH_COOKIE = "fyli_auth";  
         public static void SetCookie<T>(string name, T data, HttpContext httpContext)
         {
-            string value = JsonSerializer.Serialize(data);
+            string value = JsonConvert.SerializeObject(data);
             var options = new CookieOptions();
             options.Expires = DateTime.Now.AddDays(1);
             options.IsEssential = true;
@@ -23,7 +24,7 @@ namespace Memento.Libs
             var cookie = httpContext.Request.Cookies[name];
             T value = default(T);
             if (cookie != null && !string.IsNullOrWhiteSpace(cookie)) {
-                value = JsonSerializer.Deserialize<T>(cookie);
+                value = JsonConvert.DeserializeObject<T>(cookie);
             }
             return value;
         }
