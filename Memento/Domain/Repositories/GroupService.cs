@@ -207,14 +207,15 @@ namespace Domain.Repository
         {
             var start = DateTime.Now;
             networkIds = networkIds ?? new List<long>();
-            var drop = Context.Drops.Where(x => x.UserId == userId && x.DropId == dropId).First();
+            var drop = Context.Drops.Where(x => x.UserId == userId && x.DropId == dropId)
+                .Include(i => i.TagDrops)
+                .First();
             var tags = drop.TagDrops.Where(x => !networkIds.Contains(x.UserTagId)).Select(s => new GroupModel
             {
                 TagId = s.UserTagId,
                 Name = s.UserTag.Name,
                 Foreign = false
             }).OrderBy(x => x.Name).ToList();
-            Context.SaveChanges();
             return tags;
         }
 
@@ -225,7 +226,6 @@ namespace Domain.Repository
             var personModels = Context.Drops.Where(x => x.UserId == userId && x.DropId == dropId)
                 .SelectMany(s => s.OtherUsersDrops).Where(x => !people.Contains(x.User.UserName.ToLower()))
                 .Select(s => new PersonModelV2 { Name = s.User.UserName, Id = s.User.UserId }).Distinct().ToList();
-            Context.SaveChanges();
             return personModels;
         }
 

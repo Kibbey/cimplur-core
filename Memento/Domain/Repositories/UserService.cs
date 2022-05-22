@@ -47,6 +47,8 @@ namespace Domain.Repository
             user.UserName = userName;
             user.Email = email;
             user.Created = DateTime.UtcNow;
+            user.SuggestionReminderSent = DateTime.UtcNow;
+            user.QuestionRemindersSent = DateTime.UtcNow;
             user.Name = name;
             if (reasons != null) {
                 user.Reasons = JsonConvert.SerializeObject(reasons);
@@ -54,7 +56,7 @@ namespace Domain.Repository
             if (acceptTerms) {
                 user.AcceptedTerms = DateTime.UtcNow;
                 // Free premium for a 60 days
-                user.PremiumExpiration = DateTime.UtcNow.AddDays(60);
+                user.PremiumExpiration = DateTime.UtcNow.AddYears(10);
             }
             if (string.IsNullOrWhiteSpace(token))
             {

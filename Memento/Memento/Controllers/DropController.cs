@@ -1,11 +1,11 @@
 ﻿using Domain.Models;
-using log4net;
 using Memento.Web.Models;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Memento.Libs;
 using Domain.Repository;
+using Microsoft.Extensions.Logging;
 
 namespace Memento.Web.Controllers
 {
@@ -18,17 +18,19 @@ namespace Memento.Web.Controllers
         private UserService userService;
         private GroupService groupService;
         private PromptService promptService;
+        private ILogger logger;
         public DropController(
             DropsService dropsService, 
             TimelineService timelineService,
             UserService userService,
             GroupService groupService,
-            PromptService promptService) {
+            PromptService promptService, ILogger<DropController> logger) {
             this.dropService = dropsService;
             this.timelineService = timelineService;
             this.userService = userService;
             this.groupService = groupService;
             this.promptService = promptService;
+            this.logger = logger;
         }
 
         [HttpGet]
@@ -125,8 +127,8 @@ namespace Memento.Web.Controllers
             }
             catch (Exception e)
             {
-                logger.Error("Add drop - important:",e);
-                return BadRequest("There was an error processing your reqeust.  We are on it - thank you for your patience.");
+                logger.LogError(e, "drop create");
+                return BadRequest("There was an error processing your request.  We are on it - thank you for your patience.");
             }
         }
 
@@ -154,8 +156,5 @@ namespace Memento.Web.Controllers
 
             return Ok(new { date = dropModel.Date, isTask = isTask });
         }
-
-
-        private ILog logger = LogManager.GetLogger(nameof(UserService));
     }
 }
