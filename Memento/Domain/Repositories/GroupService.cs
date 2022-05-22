@@ -208,8 +208,9 @@ namespace Domain.Repository
             var start = DateTime.Now;
             networkIds = networkIds ?? new List<long>();
             var drop = Context.Drops.Where(x => x.UserId == userId && x.DropId == dropId)
-                .Include(i => i.TagDrops)
+                .Include(i => i.TagDrops).ThenInclude(i => i.UserTag)
                 .First();
+            networkIds = networkIds != null ? networkIds : new List<long>();
             var tags = drop.TagDrops.Where(x => !networkIds.Contains(x.UserTagId)).Select(s => new GroupModel
             {
                 TagId = s.UserTagId,
