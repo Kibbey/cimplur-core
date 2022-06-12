@@ -1,7 +1,6 @@
 ﻿using Domain.Models;
 using Domain.Emails;
 using Domain.Utilities;
-using log4net;
 using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
@@ -11,19 +10,25 @@ using System.Threading.Tasks;
 
 using static Domain.Emails.EmailTemplates;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Domain.Repository
 {
     public class NotificationService : BaseService
     {
-        public NotificationService(SendEmailService sendEmailService, GroupService groupService) {
+        public NotificationService(
+            SendEmailService sendEmailService, 
+            GroupService groupService,
+            ILogger<NotificationService> logger
+            ) {
             this.sendEmailService = sendEmailService;
             this.groupService = groupService;
+            this.logger = logger;
         }
 
         private SendEmailService sendEmailService;
         private GroupService groupService;
-        private ILog logger = log4net.LogManager.GetLogger(typeof(NotificationService).Name);
+        private ILogger logger;
 
         public async Task AddNotificationDropAdded(int userId, HashSet<long> networkIds, int dropId)
         {
@@ -45,7 +50,7 @@ namespace Domain.Repository
                         var last = DateTime.UtcNow.AddHours(-2);
                         var lastNotification = await Context.SharedDropNotifications.
                             FirstOrDefaultAsync(x => x.TargetUserId == viewer
-                        && x.SharerUserId == userId && x.TimeShared > last).ConfigureAwait(false);
+                        && x.SharerUserId == userId && x.TimeShared > last);
                         //only send an email if they haven't gotten a notification in the last hour
                         if (lastNotification == null)
                         {
@@ -61,7 +66,7 @@ namespace Domain.Repository
                     }
                 }
             } catch (Exception e) {
-                logger.Error(e);
+                logger.LogError(e, "Send notification");
             }
         }
 
@@ -183,7 +188,7 @@ namespace Domain.Repository
                     }
                 }
             } catch (Exception e) {
-                logger.Error(e);
+                logger.LogError(e, "Add notification");
             }
             return sendEmail;
         }

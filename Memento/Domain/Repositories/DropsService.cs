@@ -89,8 +89,7 @@ namespace Domain.Repository
             if (selectedNetworkIds?.Any() ?? false)
             {
                 Task.Run(async () => {
-                    await notificationService.AddNotificationDropAdded(userId, selectedNetworkIds.ToHashSet(), drop.DropId).ConfigureAwait(false);
-                    
+                    await notificationService.AddNotificationDropAdded(userId, selectedNetworkIds.ToHashSet(), drop.DropId).ConfigureAwait(false);                
                 });
             }
             EventService.EmitEvent(EventService.AddDrop, userId);
@@ -108,31 +107,35 @@ namespace Domain.Repository
 
         public async Task<bool> Edit(DropModel model, List<long> networkIds, List<int> images, List<int> movies, int userId)
         {
-            networkIds = networkIds ?? new List<long>();
-            networkIds = networkIds.Distinct().ToList();
+            networkIds = networkIds?.Distinct()?.ToList() ?? new List<long>();
             var drop = await Context.Drops
                 .Include(i => i.Images)
                 .Include(m => m.Movies)
                 .Include(c => c.ContentDrop)
+                .Include(n => n.TagDrops)
                 .FirstOrDefaultAsync(x => x.DropId == model.DropId && x.UserId == userId).ConfigureAwait(false);
 
             if (drop == null)
             {
                 throw new Exception(string.Format("Drop not found {0} for {1}.", model.DropId.ToString(), userId.ToString()));
             }
-
-            foreach (var tag in drop.TagDrops.ToList())
+            var userTags = drop.TagDrops.ToList();
+            foreach (var tag in userTags)
             {
-                Context.NetworkDrops.Remove(tag);
+                if (!networkIds.Contains(tag.UserTagId)) {
+                    Context.NetworkDrops.Remove(tag);
+                }
             }
-
+            var userTagIds = userTags.Select(s => s.UserTagId).ToList();
             foreach (var networkId in networkIds)
             {
-                drop.TagDrops.Add(new TagDrop
+                if (!userTagIds.Contains(networkId))
                 {
-                    UserTagId = networkId
-                });
-
+                    drop.TagDrops.Add(new TagDrop
+                    {
+                        UserTagId = networkId
+                    });
+                }
             }
 
             drop.Date = model.Date;
@@ -528,8 +531,13 @@ namespace Domain.Repository
 
         public async Task Delete(int dropId, int userId)
         {
-            var drop = await Context.Drops.FirstOrDefaultAsync(x => x.DropId == dropId && x.UserId == userId)
-                .ConfigureAwait(false);
+            var drop = await Context.Drops
+                .Include(d => d.ContentDrop)
+                .Include(i => i.Images)
+                .Include(m => m.Movies)
+                .Include(n => n.Notifications)
+                .Include(t => t.TagDrops)
+                .FirstOrDefaultAsync(x => x.DropId == dropId && x.UserId == userId);
             if (drop == null)
             {
                 throw new Exception(string.Format("Drop to delete not found {0} for {1}.", dropId.ToString(), userId.ToString()));

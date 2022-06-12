@@ -28,9 +28,9 @@ namespace Memento.Web.Controllers
         [Route("")]
         public async Task<IActionResult> Index(string token)
         {
-            var newRoute = EmailSafeLinkCreator.UnencodeLink(token);
-            var loginToken = await Login(newRoute);
-            var path = EmailSafeLinkCreator.GetPath(newRoute);
+            var routeWithToken = EmailSafeLinkCreator.UnencodeLink(token);
+            var loginToken = await Login(routeWithToken);
+            var path = EmailSafeLinkCreator.GetPath(routeWithToken);
             if (loginToken == null) {
                 return Redirect(Constants.HostUrl);
             } else {

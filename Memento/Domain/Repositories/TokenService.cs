@@ -1,7 +1,7 @@
 ﻿using Domain.Models;
 using Domain.Utilities;
-using log4net;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Threading.Tasks;
@@ -10,9 +10,10 @@ namespace Domain.Repository
 {
     public class TokenService : BaseService
     {
-        public TokenService(IOptions<AppSettings> appSettings) {
+        public TokenService(IOptions<AppSettings> appSettings, ILogger<TokenService> logger) {
             var settings = appSettings.Value;
             linkKey = settings.Link;
+            this.logger = logger;
         }
 
         public async Task<OneTimePasswordModel> CreateLinkToken(string email)
@@ -51,13 +52,13 @@ namespace Domain.Repository
             }
             catch (Exception e)
             {
-                logger.Error($"Login Issue - {token}", e);
+                logger.LogError(e, $"Login Issue - {token}");
             }
             return null;
         }
 
         private int expirationInMinutes = 7 * 60 * 24;
         private string linkKey = "";
-        private ILog logger = LogManager.GetLogger(nameof(UserService));
+        private ILogger logger;
     }
 }
